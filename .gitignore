@@ -1,0 +1,8 @@
+# Ignore Mac system files
+.DS_store
+
+#Ignore makefiles
+src/Makefile
+
+#Ignore makefile in all modules
+src/*/Makefile
