@@ -57,7 +57,7 @@ public class Label implements GlobalConst{
   }
    
    /** Constructor
-    * @param atuple a byte array which contains the tuple
+    * @param alabel a byte array which contains the tuple
     * @param offset the offset of the tuple in the byte array
     * @param length the length of the tuple
     */
@@ -71,7 +71,7 @@ public class Label implements GlobalConst{
    }
    
    /** Constructor(used as tuple copy)
-    * @param fromTuple   a byte array which contains the tuple
+    * @param fromLabel   a byte array which contains the tuple
     * 
     */
    public Label(Label fromLabel)
@@ -98,7 +98,7 @@ public class Label implements GlobalConst{
    
    /** Copy a tuple to the current tuple position
     *  you must make sure the tuple lengths must be equal
-    * @param fromTuple the tuple being copied
+    * @param fromLabel the tuple being copied
     */
    public void labelCopy(Label fromLabel)
    {
@@ -109,7 +109,7 @@ public class Label implements GlobalConst{
    }
 
    /** This is used when you don't want to use the constructor
-    * @param atuple  a byte array which contains the tuple
+    * @param alabel  a byte array which contains the tuple
     * @param offset the offset of the tuple in the byte array
     * @param length the length of the tuple
     */
