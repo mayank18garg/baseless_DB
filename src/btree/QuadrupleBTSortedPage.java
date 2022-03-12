@@ -7,11 +7,15 @@
 
 package btree;
 
-import java.io.*;
-import java.lang.*;
+import diskmgr.Page;
+import global.PageId;
 import global.*;
-import diskmgr.*;
-import heap.*;
+import global.SystemDefs;
+import heap.HFPage;
+import quadrupleheap.*;
+import heap.InvalidSlotNumberException;
+
+import java.io.IOException;
 
 
 /**
@@ -19,52 +23,52 @@ import heap.*;
  * just holds abstract records in sorted order, based 
  * on how they compare using the key interface from BT.java.
  */
-public class BTSortedPage  extends HFPage{
+public class QuadrupleBTSortedPage extends THFPage{
 
-  
+
   int keyType; //it will be initialized in BTFile
-  
-  
+
+
   /** pin the page with pageno, and get the corresponding SortedPage
    *@param pageno input parameter. To specify which page number the
    *  BTSortedPage will correspond to.
-   *@param keyType input parameter. It specifies the type of key. It can be 
-   *               AttrType.attrString or AttrType.attrInteger. 
+   *@param keyType input parameter. It specifies the type of key. It can be
+   *               AttrType.attrString or AttrType.attrInteger.
    *@exception  ConstructPageException  error for BTSortedPage constructor
    */
-  public BTSortedPage(PageId pageno, int keyType) 
-    throws ConstructPageException 
-    { 
+  public QuadrupleBTSortedPage(PageId pageno, int keyType)
+    throws ConstructPageException
+    {
       super();
       try {
 	// super();
-	SystemDefs.JavabaseBM.pinPage(pageno, this, false/*Rdisk*/); 
-	this.keyType=keyType;   
+	SystemDefs.JavabaseBM.pinPage(pageno, this, false/*Rdisk*/);
+	this.keyType=keyType;
       }
       catch (Exception e) {
 	throw new ConstructPageException(e, "construct sorted page failed");
       }
     }
-  
-  /**associate the SortedPage instance with the Page instance 
+
+  /**associate the SortedPage instance with the Page instance
    *@param page input parameter. To specify which page  the
    *  BTSortedPage will correspond to.
-   *@param keyType input parameter. It specifies the type of key. It can be 
-   *               AttrType.attrString or AttrType.attrInteger. 
+   *@param keyType input parameter. It specifies the type of key. It can be
+   *               AttrType.attrString or AttrType.attrInteger.
    */
-  public BTSortedPage(Page page, int keyType) {
-    
+  public QuadrupleBTSortedPage(Page page, int keyType) {
+
     super(page);
-    this.keyType=keyType;   
-  }  
-  
-  
+    this.keyType=keyType;
+  }
+
+
   /**new a page, and associate the SortedPage instance with the Page instance
-   *@param keyType input parameter. It specifies the type of key. It can be 
-   *               AttrType.attrString or AttrType.attrInteger. 
+   *@param keyType input parameter. It specifies the type of key. It can be
+   *               AttrType.attrString or AttrType.attrInteger.
    *@exception  ConstructPageException error for BTSortedPage constructor
-   */ 
-  public BTSortedPage(int keyType) 
+   */
+  public QuadrupleBTSortedPage(int keyType)
     throws ConstructPageException
     {
       super();
@@ -87,17 +91,17 @@ public class BTSortedPage  extends HFPage{
    *  sorted in increasing key order.
    *  Only the  slot  directory is  rearranged.  The  data records remain in
    *  the same positions on the  page.
-   *
+   * 
+   *@param entry the entry to be inserted. Input parameter.
    *@return its rid where the entry was inserted; null if no space left.
    *@exception  InsertRecException error when insert
-   * @param entry the entry to be inserted. Input parameter.
    */
-   protected RID insertRecord(KeyDataEntry entry)
+   protected QID insertRecord( KeyDataEntry entry)
           throws InsertRecException 
    {
      int i;
      short  nType;
-     RID rid;
+     QID qid;
      byte[] record;
      // ASSERTIONS:
      // - the slot directory is compressed; Inserts will occur at the end
@@ -110,11 +114,11 @@ public class BTSortedPage  extends HFPage{
      
      try {
        
-       record=BT.getBytesFromEntry(entry);  
-       rid=super.insertRecord(record);
-         if (rid==null) return null;
+       record=QuadrupleBT.getBytesFromEntry(entry);
+       qid=super.insertQRecord(record);
+         if (qid==null) return null;
 	 
-         if ( entry.data instanceof LeafData )
+         if ( entry.data instanceof QuadrupleLeafData )
 	   nType= NodeType.LEAF;
          else  //  entry.data instanceof IndexData              
 	   nType= NodeType.INDEX;
@@ -126,13 +130,13 @@ public class BTSortedPage  extends HFPage{
 	     
 	     KeyClass key_i, key_iplus1;
 	     
-	     key_i=BT.getEntryFromBytes(getpage(), getSlotOffset(i), 
+	     key_i=QuadrupleBT.getEntryFromBytes(getpage(), getSlotOffset(i),
 					getSlotLength(i), keyType, nType).key;
 	     
-	     key_iplus1=BT.getEntryFromBytes(getpage(), getSlotOffset(i-1), 
+	     key_iplus1=QuadrupleBT.getEntryFromBytes(getpage(), getSlotOffset(i-1),
 					     getSlotLength(i-1), keyType, nType).key;
 	     
-	     if (BT.keyCompare(key_i, key_iplus1) < 0)
+	     if (QuadrupleBT.keyCompare(key_i, key_iplus1) < 0)
 	       {
 	       // switch slots:
 		 int ln, off;
@@ -152,8 +156,8 @@ public class BTSortedPage  extends HFPage{
 	 // (starting at slot 0)
 	 // - slot directory compacted
 	 
-	 rid.slotNo = i;
-	 return rid;
+	 qid.slotNo = i;
+	 return qid;
      }
      catch (Exception e ) { 
        throw new InsertRecException(e, "insert record failed"); 
@@ -165,23 +169,23 @@ public class BTSortedPage  extends HFPage{
 
   /**  Deletes a record from a sorted record page. It also calls
    *    HFPage.compact_slot_dir() to compact the slot directory.
+   *@param rid it specifies where a record will be deleted
    *@return true if success; false if rid is invalid(no record in the rid).
    *@exception DeleteRecException error when delete
-   * @param rid it specifies where a record will be deleted
    */
-  public  boolean deleteSortedRecord(QID rid)
+  public  boolean deleteSortedRecord(QID qid)
     throws DeleteRecException
     {
       try {
 	
-	deleteRecord(rid);
+	deleteQRecord(qid);
 	compact_slot_dir();
 	return true;  
 	// ASSERTIONS:
 	// - slot directory is compacted
       }
       catch (Exception  e) {
-	if (e instanceof InvalidSlotNumberException)
+	if (e instanceof heap.InvalidSlotNumberException)
 	  return false;
 	else
 	  throw new DeleteRecException(e, "delete record failed");
