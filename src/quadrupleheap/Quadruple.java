@@ -5,6 +5,7 @@ package quadrupleheap;
 import java.io.*;
 import java.lang.*;
 import global.*;
+import heap.Tuple;
 
 
 public class Quadruple implements GlobalConst{
@@ -213,10 +214,10 @@ public class Quadruple implements GlobalConst{
    /** get the offset of a tuple
     *  @return offset of the tuple in byte array
     */   
-  //  public int getOffset()
-  //  {
-  //     return tuple_offset;
-  //  }   
+    public int getOffset()
+    {
+       return quadruple_offset;
+    }
    
    /** Copy the tuple byte array out
     *  @return  byte[], a byte array contains the tuple
@@ -234,10 +235,10 @@ public class Quadruple implements GlobalConst{
     *  @return  data byte array 		
     */
     
-  //  public byte [] returnTupleByteArray()
-  //  {
-  //      return data;
-  //  }
+    public byte [] returnQuadrupleByteArray()
+    {
+        return data;
+    }
    
   
 
