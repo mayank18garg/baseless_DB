@@ -5,7 +5,7 @@
 src/Makefile
 
 #Ignore makefile in all modules
-#src/*/Makefile
+src/*/Makefile
 
 #ignore .class files
 src/*/*.class
