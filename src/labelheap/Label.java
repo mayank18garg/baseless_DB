@@ -1,13 +1,13 @@
 /* File Tuple.java */
 
-package heap;
+package labelheap;
 
 import java.io.*;
 import java.lang.*;
 import global.*;
 
 
-public class Tuple implements GlobalConst{
+public class Label implements GlobalConst{
 
 
  /** 
@@ -23,37 +23,37 @@ public class Tuple implements GlobalConst{
   /**
    * start position of this tuple in data[]
    */
-  private int tuple_offset;
+  private int label_offset;
 
   /**
    * length of this tuple
    */
-  private int tuple_length;
+  private int label_length;
 
   /** 
    * private field
    * Number of fields in this tuple
    */
-  private short fldCnt;
+  private short fldCnt=1;
 
   /** 
    * private field
    * Array of offsets of the fields
    */
  
-  private short [] fldOffset; 
+  private short [] fldOffset = new short[] {0}; 
 
    /**
     * Class constructor
     * Creat a new tuple with length = max_size,tuple offset = 0.
     */
 
-  public  Tuple()
+  public  Label()
   {
        // Creat a new tuple
        data = new byte[max_size];
-       tuple_offset = 0;
-       tuple_length = max_size;
+       label_offset = 0;
+       label_length = max_size;
   }
    
    /** Constructor
@@ -62,11 +62,11 @@ public class Tuple implements GlobalConst{
     * @param length the length of the tuple
     */
 
-   public Tuple(byte [] atuple, int offset, int length)
+   public Label(byte [] alabel, int offset, int length)
    {
-      data = atuple;
-      tuple_offset = offset;
-      tuple_length = length;
+      data = alabel;
+      label_offset = offset;
+      label_length = length;
     //  fldCnt = getShortValue(offset, data);
    }
    
@@ -74,13 +74,13 @@ public class Tuple implements GlobalConst{
     * @param fromTuple   a byte array which contains the tuple
     * 
     */
-   public Tuple(Tuple fromTuple)
+   public Label(Label fromLabel)
    {
-       data = fromTuple.getTupleByteArray();
-       tuple_length = fromTuple.getLength();
-       tuple_offset = 0;
-       fldCnt = fromTuple.noOfFlds(); 
-       fldOffset = fromTuple.copyFldOffset(); 
+       data = fromLabel.getLabelByteArray();
+       label_length = fromLabel.getLength();
+       label_offset = 0;
+       fldCnt = fromLabel.noOfFlds(); 
+       fldOffset = fromLabel.copyFldOffset(); 
    }
 
    /**  
@@ -88,22 +88,22 @@ public class Tuple implements GlobalConst{
     * Creat a new tuple with length = size,tuple offset = 0.
     */
  
-  public  Tuple(int size)
+  public Label(int size)
   {
        // Creat a new tuple
        data = new byte[size];
-       tuple_offset = 0;
-       tuple_length = size;     
+       label_offset = 0;
+       label_length = size;     
   }
    
    /** Copy a tuple to the current tuple position
     *  you must make sure the tuple lengths must be equal
     * @param fromTuple the tuple being copied
     */
-   public void tupleCopy(Tuple fromTuple)
+   public void labelCopy(Label fromLabel)
    {
-       byte [] temparray = fromTuple.getTupleByteArray();
-       System.arraycopy(temparray, 0, data, tuple_offset, tuple_length);   
+       byte [] temparray = fromLabel.getLabelByteArray();
+       System.arraycopy(temparray, 0, data, label_offset, label_length);   
 //       fldCnt = fromTuple.noOfFlds(); 
 //       fldOffset = fromTuple.copyFldOffset(); 
    }
@@ -114,11 +114,11 @@ public class Tuple implements GlobalConst{
     * @param length the length of the tuple
     */
 
-   public void tupleInit(byte [] atuple, int offset, int length)
+   public void tupleInit(byte [] alabel, int offset, int length)
    {
-      data = atuple;
-      tuple_offset = offset;
-      tuple_length = length;
+      data = alabel;
+      label_offset = offset;
+      label_length = length;
    }
 
  /**
@@ -130,8 +130,8 @@ public class Tuple implements GlobalConst{
  public void tupleSet(byte [] record, int offset, int length)  
   {
       System.arraycopy(record, offset, data, 0, length);
-      tuple_offset = 0;
-      tuple_length = length;
+      label_offset = 0;
+      label_length = length;
   }
   
  /** get the length of a tuple, call this method if you did not 
@@ -140,7 +140,7 @@ public class Tuple implements GlobalConst{
   */   
   public int getLength()
    {
-      return tuple_length;
+      return label_length;
    }
 
 /** get the length of a tuple, call this method if you did 
@@ -149,7 +149,7 @@ public class Tuple implements GlobalConst{
   */
   public short size()
    {
-      return ((short) (fldOffset[fldCnt] - tuple_offset));
+      return ((short) (fldOffset[fldCnt] - label_offset));
    }
  
    /** get the offset of a tuple
@@ -157,7 +157,7 @@ public class Tuple implements GlobalConst{
     */   
    public int getOffset()
    {
-      return tuple_offset;
+      return label_offset;
    }   
    
    /** Copy the tuple byte array out
@@ -165,11 +165,11 @@ public class Tuple implements GlobalConst{
     *		the length of byte[] = length of the tuple
     */
     
-   public byte [] getTupleByteArray() 
+   public byte [] getLabelByteArray() 
    {
-       byte [] tuplecopy = new byte [tuple_length];
-       System.arraycopy(data, tuple_offset, tuplecopy, 0, tuple_length);
-       return tuplecopy;
+       byte [] labelcopy = new byte [label_length];
+       System.arraycopy(data, label_offset, labelcopy, 0, label_length);
+       return labelcopy;
    }
    
    /** return the data byte array 
@@ -181,253 +181,19 @@ public class Tuple implements GlobalConst{
        return data;
    }
    
-   /**
-    * Convert this field into integer 
-    * 
-    * @param	fldNo	the field number
-    * @return		the converted integer if success
-    *			
-    * @exception   IOException I/O errors
-    * @exception   FieldNumberOutOfBoundException Tuple field number out of bound
-    */
 
-  public int getIntFld(int fldNo) 
-  	throws IOException, FieldNumberOutOfBoundException
-  {           
-    int val;
-    if ( (fldNo > 0) && (fldNo <= fldCnt))
-     {
-      val = Convert.getIntValue(fldOffset[fldNo -1], data);
-      return val;
-     }
-    else 
-     throw new FieldNumberOutOfBoundException (null, "TUPLE:TUPLE_FLDNO_OUT_OF_BOUND");
-  }
-    
-   /**
-    * Convert this field in to float
-    *
-    * @param    fldNo   the field number
-    * @return           the converted float number  if success
-    *			
-    * @exception   IOException I/O errors
-    * @exception   FieldNumberOutOfBoundException Tuple field number out of bound
-    */
-
-    public float getFloFld(int fldNo) 
-    	throws IOException, FieldNumberOutOfBoundException
-     {
-	float val;
-      if ( (fldNo > 0) && (fldNo <= fldCnt))
-       {
-        val = Convert.getFloValue(fldOffset[fldNo -1], data);
-        return val;
-       }
-      else 
-       throw new FieldNumberOutOfBoundException (null, "TUPLE:TUPLE_FLDNO_OUT_OF_BOUND");
-     }
-
-
-   /**
-    * Convert this field into String
-    *
-    * @param    fldNo   the field number
-    * @return           the converted string if success
-    *			
-    * @exception   IOException I/O errors
-    * @exception   FieldNumberOutOfBoundException Tuple field number out of bound
-    */
-
-   public String getStrFld(int fldNo) 
-   	throws IOException, FieldNumberOutOfBoundException 
-   { 
-         String val;
-    if ( (fldNo > 0) && (fldNo <= fldCnt))      
-     {
-        val = Convert.getStrValue(fldOffset[fldNo -1], data, 
-		fldOffset[fldNo] - fldOffset[fldNo -1]); //strlen+2
-        return val;
-     }
-    else 
-     throw new FieldNumberOutOfBoundException (null, "TUPLE:TUPLE_FLDNO_OUT_OF_BOUND");
-  }
- 
-   /**
-    * Convert this field into a character
-    *
-    * @param    fldNo   the field number
-    * @return           the character if success
-    *			
-    * @exception   IOException I/O errors
-    * @exception   FieldNumberOutOfBoundException Tuple field number out of bound
-    */
-
-   public char getCharFld(int fldNo) 
-   	throws IOException, FieldNumberOutOfBoundException 
-    {   
-       char val;
-      if ( (fldNo > 0) && (fldNo <= fldCnt))      
-       {
-        val = Convert.getCharValue(fldOffset[fldNo -1], data);
-        return val;
-       }
-      else 
-       throw new FieldNumberOutOfBoundException (null, "TUPLE:TUPLE_FLDNO_OUT_OF_BOUND");
- 
-    }
-
-  /**
-   * Set this field to integer value
-   *
-   * @param	fldNo	the field number
-   * @param	val	the integer value
-   * @exception   IOException I/O errors
-   * @exception   FieldNumberOutOfBoundException Tuple field number out of bound
-   */
-
-  public Tuple setIntFld(int fldNo, int val) 
-  	throws IOException, FieldNumberOutOfBoundException
-  { 
-    if ( (fldNo > 0) && (fldNo <= fldCnt))
-     {
-	Convert.setIntValue (val, fldOffset[fldNo -1], data);
-	return this;
-     }
-    else 
-     throw new FieldNumberOutOfBoundException (null, "TUPLE:TUPLE_FLDNO_OUT_OF_BOUND"); 
-  }
-
-  /**
-   * Set this field to float value
-   *
-   * @param     fldNo   the field number
-   * @param     val     the float value
-   * @exception   IOException I/O errors
-   * @exception   FieldNumberOutOfBoundException Tuple field number out of bound
-   */
-
-  public Tuple setFloFld(int fldNo, float val) 
-  	throws IOException, FieldNumberOutOfBoundException
-  { 
-   if ( (fldNo > 0) && (fldNo <= fldCnt))
-    {
-     Convert.setFloValue (val, fldOffset[fldNo -1], data);
-     return this;
-    }
-    else  
-     throw new FieldNumberOutOfBoundException (null, "TUPLE:TUPLE_FLDNO_OUT_OF_BOUND"); 
-     
-  }
-
-  /**
-   * Set this field to String value
-   *
-   * @param     fldNo   the field number
-   * @param     val     the string value
-   * @exception   IOException I/O errors
-   * @exception   FieldNumberOutOfBoundException Tuple field number out of bound
-   */
-
-   public Tuple setStrFld(int fldNo, String val) 
-		throws IOException, FieldNumberOutOfBoundException  
-   {
-     if ( (fldNo > 0) && (fldNo <= fldCnt))        
-      {
-         Convert.setStrValue (val, fldOffset[fldNo -1], data);
-         return this;
-      }
-     else 
-       throw new FieldNumberOutOfBoundException (null, "TUPLE:TUPLE_FLDNO_OUT_OF_BOUND");
-    }
-
-
-   /**
-    * setHdr will set the header of this tuple.   
-    *
-    * @param	numFlds	  number of fields
-    * @param	types[]	  contains the types that will be in this tuple
-    * @param	strSizes[]      contains the sizes of the string 
-    *				
-    * @exception IOException I/O errors
-    * @exception InvalidTypeException Invalid tupe type
-    * @exception InvalidTupleSizeException Tuple size too big
-    *
-    */
-
-public void setHdr (short numFlds,  AttrType types[], short strSizes[])
- throws IOException, InvalidTypeException, InvalidTupleSizeException		
-{
-  if((numFlds +2)*2 > max_size)
-    throw new InvalidTupleSizeException (null, "TUPLE: TUPLE_TOOBIG_ERROR");
-  
-  fldCnt = numFlds;
-  Convert.setShortValue(numFlds, tuple_offset, data);
-  fldOffset = new short[numFlds+1];
-  int pos = tuple_offset+2;  // start position for fldOffset[]
-  
-  //sizeof short =2  +2: array siaze = numFlds +1 (0 - numFilds) and
-  //another 1 for fldCnt
-  fldOffset[0] = (short) ((numFlds +2) * 2 + tuple_offset);   
-   
-  Convert.setShortValue(fldOffset[0], pos, data);
-  pos +=2;
-  short strCount =0;
-  short incr;
-  int i;
-
-  for (i=1; i<numFlds; i++)
+  public String getLabel() throws IOException
   {
-    switch(types[i-1].attrType) {
-    
-   case AttrType.attrInteger:
-     incr = 4;
-     break;
+    String val = Convert.getStrValue(fldOffset[0], data, label_length);
+    return val;
+  }
 
-   case AttrType.attrReal:
-     incr =4;
-     break;
-
-   case AttrType.attrString:
-     incr = (short) (strSizes[strCount] +2);  //strlen in bytes = strlen +2
-     strCount++;
-     break;       
- 
-   default:
-    throw new InvalidTypeException (null, "TUPLE: TUPLE_TYPE_ERROR");
-   }
-  fldOffset[i]  = (short) (fldOffset[i-1] + incr);
-  Convert.setShortValue(fldOffset[i], pos, data);
-  pos +=2;
- 
-}
- switch(types[numFlds -1].attrType) {
-
-   case AttrType.attrInteger:
-     incr = 4;
-     break;
-
-   case AttrType.attrReal:
-     incr =4;
-     break;
-
-   case AttrType.attrString:
-     incr =(short) ( strSizes[strCount] +2);  //strlen in bytes = strlen +2
-     break;
-
-   default:
-    throw new InvalidTypeException (null, "TUPLE: TUPLE_TYPE_ERROR");
-   }
-
-  fldOffset[numFlds] = (short) (fldOffset[i-1] + incr);
-  Convert.setShortValue(fldOffset[numFlds], pos, data);
-  
-  tuple_length = fldOffset[numFlds] - tuple_offset;
-
-  if(tuple_length > max_size)
-   throw new InvalidTupleSizeException (null, "TUPLE: TUPLE_TOOBIG_ERROR");
-}
-     
-  
+  public Label setLabel(String label) throws IOException
+  {
+    Convert.setStrValue(label, fldOffset[0], data);
+    return this;
+  }
+       
   /**
    * Returns number of fields in this tuple
    *
@@ -462,64 +228,64 @@ public void setHdr (short numFlds,  AttrType types[], short strSizes[])
   * @param type  the types in the tuple
   * @Exception IOException I/O exception
   */
- public void print(AttrType type[])
-    throws IOException 
- {
-  int i, val;
-  float fval;
-  String sval;
+//  public void print(AttrType type[])
+//     throws IOException 
+//  {
+//   int i, val;
+//   float fval;
+//   String sval;
 
-  System.out.print("[");
-  for (i=0; i< fldCnt-1; i++)
-   {
-    switch(type[i].attrType) {
+//   System.out.print("[");
+//   for (i=0; i< fldCnt-1; i++)
+//    {
+//     switch(type[i].attrType) {
 
-   case AttrType.attrInteger:
-     val = Convert.getIntValue(fldOffset[i], data);
-     System.out.print(val);
-     break;
+//    case AttrType.attrInteger:
+//      val = Convert.getIntValue(fldOffset[i], data);
+//      System.out.print(val);
+//      break;
 
-   case AttrType.attrReal:
-     fval = Convert.getFloValue(fldOffset[i], data);
-     System.out.print(fval);
-     break;
+//    case AttrType.attrReal:
+//      fval = Convert.getFloValue(fldOffset[i], data);
+//      System.out.print(fval);
+//      break;
 
-   case AttrType.attrString:
-     sval = Convert.getStrValue(fldOffset[i], data,fldOffset[i+1] - fldOffset[i]);
-     System.out.print(sval);
-     break;
+//    case AttrType.attrString:
+//      sval = Convert.getStrValue(fldOffset[i], data,fldOffset[i+1] - fldOffset[i]);
+//      System.out.print(sval);
+//      break;
   
-   case AttrType.attrNull:
-   case AttrType.attrSymbol:
-     break;
-   }
-   System.out.print(", ");
- } 
+//    case AttrType.attrNull:
+//    case AttrType.attrSymbol:
+//      break;
+//    }
+//    System.out.print(", ");
+//  } 
  
- switch(type[fldCnt-1].attrType) {
+//  switch(type[fldCnt-1].attrType) {
 
-   case AttrType.attrInteger:
-     val = Convert.getIntValue(fldOffset[i], data);
-     System.out.print(val);
-     break;
+//    case AttrType.attrInteger:
+//      val = Convert.getIntValue(fldOffset[i], data);
+//      System.out.print(val);
+//      break;
 
-   case AttrType.attrReal:
-     fval = Convert.getFloValue(fldOffset[i], data);
-     System.out.print(fval);
-     break;
+//    case AttrType.attrReal:
+//      fval = Convert.getFloValue(fldOffset[i], data);
+//      System.out.print(fval);
+//      break;
 
-   case AttrType.attrString:
-     sval = Convert.getStrValue(fldOffset[i], data,fldOffset[i+1] - fldOffset[i]);
-     System.out.print(sval);
-     break;
+//    case AttrType.attrString:
+//      sval = Convert.getStrValue(fldOffset[i], data,fldOffset[i+1] - fldOffset[i]);
+//      System.out.print(sval);
+//      break;
 
-   case AttrType.attrNull:
-   case AttrType.attrSymbol:
-     break;
-   }
-   System.out.println("]");
+//    case AttrType.attrNull:
+//    case AttrType.attrSymbol:
+//      break;
+//    }
+//    System.out.println("]");
 
- }
+//  }
 
   /**
    * private method
