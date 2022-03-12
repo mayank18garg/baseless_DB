@@ -114,7 +114,7 @@ public class Label implements GlobalConst{
     * @param length the length of the tuple
     */
 
-   public void tupleInit(byte [] alabel, int offset, int length)
+   public void labelInit(byte [] alabel, int offset, int length)
    {
       data = alabel;
       label_offset = offset;
@@ -127,7 +127,7 @@ public class Label implements GlobalConst{
   * @param	offset  the offset of the tuple ( =0 by default)
   * @param	length	the length of the tuple
   */
- public void tupleSet(byte [] record, int offset, int length)  
+ public void labelSet(byte [] record, int offset, int length)  
   {
       System.arraycopy(record, offset, data, 0, length);
       label_offset = 0;
@@ -176,7 +176,7 @@ public class Label implements GlobalConst{
     *  @return  data byte array 		
     */
     
-   public byte [] returnTupleByteArray()
+   public byte [] returnLabelByteArray()
    {
        return data;
    }
