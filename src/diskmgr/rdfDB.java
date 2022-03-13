@@ -2,6 +2,8 @@
 
 package diskmgr;
 
+import btree.QuadrupleBTreeFile;
+import global.AttrType;
 import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
@@ -11,17 +13,41 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-//DB.java
-
 public class rdfDB implements GlobalConst {
 
 
   private static final int bits_per_page = MAX_SPACE * 8;
+    private QuadrupleHeapfile TQuadrupleHF;		//TEMPORARY HEAP FILE FOR SORTING
+
+    private QuadrupleHeapfile QuadrupleHF; 	  		//Triples Heap file to store triples
+    private LabelHeapfile Entity_HF; 	  		//Entity Heap file to store subjects/objects
+    private LabelHeapfile Predicate_HF;   		//Predicates Heap file to store predicates
+
+    private LabelBTreeFile Entity_BTree;  		//BTree Index file on Entity Heap file
+    private LabelBTreeFile Predicate_BTree; 	//BTree Predicate file on Predicate Heap file
+    private QuadrupleBTreeFile QuadrupleBTree; 		//BTree Predicate file on Predicate Heap file
+
+    private String usedbname; 				//RDF Database name
+
+    private LabelBTreeFile dup_tree;        	//BTree file for duplicate subjects
+    private LabelBTreeFile dup_Objtree;     	//BTree file for duplicate objects
+
+    private int Total_Subjects = 0; 			//Total count of subjects in RDF
+    private int Total_Objects = 0; 				//Total count of objects in RDF
+    private int Total_Predicates = 0; 			//Total count of predicates in RDF
+    private int Total_Quadruples = 0; 				//Total count of triples in RDF
+    private int Total_Entities = 0;         	//Total count of entities in RDF
 
 
+    private QuadrupleBTreeFile QuadrupleBTreeIndex; 	//BTree file for the index options given
+    // INDEX OPTIONS
+    //(1) BTree Index file on confidence
+    //(2) BTree Index file on subject and confidence
+    //(3) BTree Index file on object and confidence
+    //(4) BTree Index file on predicate and confidence
+    //(5) BTree Index file on subject
 
-
-    /** Open the database with the given name.
+  /** Open the database with the given name.
    *
    * @param name DB_name
    *
@@ -847,7 +873,160 @@ public class rdfDB implements GlobalConst {
     }
 
   } // end of unpinPage
-  
-  
+
+
+
+
+
+
+////////////////////////////////////variable change required//////////////////////////////////////
+    public void rdfDB(int type)
+    {
+        int keytype = AttrType.attrString;
+
+        /** Initialize counter to zero **/
+        PCounter.initialize();
+
+        //Create TEMP Quadruple heap file /TOFIX
+        try
+        {
+            TQuadrupleHF = new QuadrupleHeapfile("tempresult");
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        //Create Quadruple heap file
+        try
+        {
+            QuadrupleHF = new QuadrupleHeapfile(+"/QuadrupleHF");
+
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        //Create ENTITES heap file: (Entity:Subject/Object)
+        try
+        {
+            //System.out.println("Creating new entities heapfile");
+            Entity_HF = new LabelHeapfile(usedbname+"/entityHF");
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        //Create PREDICATES heap file: (Predicates)
+        try
+        {
+            //System.out.println("Creating new predicate heapfile");
+            Predicate_HF = new LabelHeapfile(usedbname+"/predicateHF");
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+
+        //Create Entity Binary tree file
+        try
+        {
+            //System.out.println("Creating new entity Binary Tree file");
+            Entity_BTree = new LabelBTreeFile(usedbname+"/entityBT",keytype,255,1);
+            Entity_BTree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        //Create Predicate Binary tree file
+        try
+        {
+            //System.out.println("Creating new Predicate Binary Tree file");
+            Predicate_BTree = new LabelBTreeFile(curr_dbname+"/predicateBT",keytype,255,1);
+            Predicate_BTree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        //Create Triple Binary tree file
+        try
+        {
+            //System.out.println("Creating new Triple Binary Tree file");
+            Triple_BTree = new TripleBTreeFile(curr_dbname+"/tripleBT",keytype,255,1);
+            Triple_BTree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        try
+        {
+            //System.out.println("Creating new Label Binary Tree file for checking duplicate subjects");
+            dup_tree = new LabelBTreeFile(curr_dbname+"/dupSubjBT",keytype,255,1);
+            dup_tree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        try
+        {
+            //System.out.println("Creating new Label Binary Tree file for checking duplicate objects");
+            dup_Objtree = new LabelBTreeFile(curr_dbname+"/dupObjBT",keytype,255,1);
+            dup_Objtree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        //Now create btree index files as per the index option
+        try
+        {
+            //System.out.println("Creating Triple Binary Tree file for given index option");
+            Triple_BTreeIndex = new TripleBTreeFile(curr_dbname+"/Triple_BTreeIndex",keytype,255,1);
+            Triple_BTreeIndex.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println ("Error creating B tree index for given index option"+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+    }
+
+    /**
+     *  Get count of Triples in RDF DB
+     *  @return int number of Triples
+     */
+
 }//end of DB class
 
