@@ -1412,7 +1412,7 @@ public class rdfDB implements GlobalConst {
 
         return success;
     }
-    public QID insertQuadruple(byte[] triplePtr)
+    public QID insertQuadruple(byte[] QuadruplePtr)
             throws Exception
     {
         QID Quadrupleid;
@@ -1478,7 +1478,7 @@ public class rdfDB implements GlobalConst {
         return qid;
     }
 
-    public boolean deleteTriple(byte[] triplePtr)
+    public boolean deleteQuadruple(byte[] QuadruplePtr)
     {
         boolean success = false;
         QID quadrupleid = null;
