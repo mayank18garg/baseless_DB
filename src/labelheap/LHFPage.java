@@ -6,7 +6,6 @@ import diskmgr.Page;
 import global.*;
 import heap.InvalidSlotNumberException;
 import heap.Tuple;
-import quadrupleheap.Quadruple;
 
 import java.io.IOException;
 
@@ -104,7 +103,7 @@ public class LHFPage extends Page
    * @param  apage   a page in buffer pool
    */
   
-  public void openHFpage(Page apage)
+  public void openLHFpage(Page apage)
     {
       data = apage.getpage();
     }
@@ -146,7 +145,7 @@ public class LHFPage extends Page
    * @return byte array
    */
   
-  public byte [] getHFpageArray()
+  public byte [] getLHFpageArray()
     {
       return data;
     }  
@@ -502,13 +501,13 @@ public class LHFPage extends Page
    * @exception  IOException I/O errors
    * in C++ Status nextRecord (LID curRid, LID& nextRid)
    */
-  public LID nextLRecord(LID curQid)
+  public LID nextLRecord(LID curLid)
     throws IOException 
     {
       LID lid = new LID();
       slotCnt = Convert.getShortValue (SLOT_CNT, data);
       
-      int i=curQid.slotNo;
+      int i=curLid.slotNo;
       short length; 
       
       // find the next non-empty slot
