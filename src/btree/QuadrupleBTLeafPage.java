@@ -9,7 +9,7 @@ package btree;
 
 import diskmgr.Page;
 import global.PageId;
-import global.QID;
+import global.*;
 import global.RID;
 
 import java.io.IOException;
@@ -20,7 +20,7 @@ import java.io.IOException;
  * (their lengths or their types), instead relying on the abstract
  * interface consisting of BT.java.
  */
-public class QuadrupleBTLeafPage extends BTSortedPage {
+public class QuadrupleBTLeafPage extends QuadrupleBTSortedPage {
 
   /** pin the page with pageno, and get the corresponding BTLeafPage,
    * also it sets the type to be NodeType.LEAF.

@@ -6,6 +6,7 @@
 package btree;
 import global.*;
 
+
 /** KeyDataEntry: define (key, data) pair.
  */
 public class KeyDataEntry {
@@ -60,6 +61,16 @@ public class KeyDataEntry {
      else if ( key instanceof StringKey ) 
         this.key= new StringKey(((StringKey)key).getKey());    
   };
+
+    /** Class constructor.
+     */
+    public KeyDataEntry( KeyClass key, QID qid){
+        data = new QuadrupleLeafData(qid);
+        if ( key instanceof IntegerKey )
+            this.key= new IntegerKey(((IntegerKey)key).getKey());
+        else if ( key instanceof StringKey )
+            this.key= new StringKey(((StringKey)key).getKey());
+    };
 
 
   /** Class constructor.

@@ -171,7 +171,7 @@ public class QuadrupleBT implements GlobalConst{
 	else throw new NodeNotMatchException(null, "node types do not match"); 
 	
 	if ( keyType== AttrType.attrInteger) {
-	  key= new IntegerKey( new Integer 
+	  key= new IntegerKey( new Integer
 			       (Convert.getIntValue(offset, from)));
 	}
 	else if (keyType== AttrType.attrString) {
@@ -296,7 +296,7 @@ public class QuadrupleBT implements GlobalConst{
         System.out.println("");
       }
       else if ( sortedPage.getType()==NodeType.LEAF ) {
-        QuadrupleBTLeafPage leafPage=new BTLeafPage((Page)sortedPage, keyType);
+        QuadrupleBTLeafPage leafPage=new QuadrupleBTLeafPage((Page)sortedPage, keyType);
         System.out.println("");
         System.out.println("**************To Print an Leaf Page ********");
         System.out.println("Current Page ID: "+ leafPage.getCurPage().pid);
