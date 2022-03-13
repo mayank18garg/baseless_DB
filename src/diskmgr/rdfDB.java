@@ -2,11 +2,9 @@
 
 package diskmgr;
 
-import btree.QuadrupleBTreeFile;
-import global.AttrType;
-import global.GlobalConst;
-import global.PageId;
-import global.SystemDefs;
+import btree.*;
+import global.*;
+import quadrupleheap.Quadruple;
 import quadrupleheap.QuadrupleHeapfile;
 
 import java.io.File;
@@ -902,7 +900,7 @@ public class rdfDB implements GlobalConst {
         //Create Quadruple heap file
         try
         {
-            QuadrupleHF = new QuadrupleHeapfile(+"/QuadrupleHF");
+            QuadrupleHF = new QuadrupleHeapfile(usedbname+"/QuadrupleHF");
 
         }
         catch(Exception e)
@@ -957,7 +955,7 @@ public class rdfDB implements GlobalConst {
         try
         {
             //System.out.println("Creating new Predicate Binary Tree file");
-            Predicate_BTree = new LabelBTreeFile(curr_dbname+"/predicateBT",keytype,255,1);
+            Predicate_BTree = new LabelBTreeFile(usedbname+"/predicateBT",keytype,255,1);
             Predicate_BTree.close();
         }
         catch(Exception e)
@@ -967,12 +965,12 @@ public class rdfDB implements GlobalConst {
             Runtime.getRuntime().exit(1);
         }
 
-        //Create Triple Binary tree file
+        //Create Quadruple Binary tree file
         try
         {
             //System.out.println("Creating new Triple Binary Tree file");
-            Triple_BTree = new TripleBTreeFile(curr_dbname+"/tripleBT",keytype,255,1);
-            Triple_BTree.close();
+            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/tripleBT",keytype,255,1);
+            QuadrupleBTree.close();
         }
         catch(Exception e)
         {
@@ -984,7 +982,7 @@ public class rdfDB implements GlobalConst {
         try
         {
             //System.out.println("Creating new Label Binary Tree file for checking duplicate subjects");
-            dup_tree = new LabelBTreeFile(curr_dbname+"/dupSubjBT",keytype,255,1);
+            dup_tree = new LabelBTreeFile(usedbname+"/dupSubjBT",keytype,255,1);
             dup_tree.close();
         }
         catch(Exception e)
@@ -997,7 +995,7 @@ public class rdfDB implements GlobalConst {
         try
         {
             //System.out.println("Creating new Label Binary Tree file for checking duplicate objects");
-            dup_Objtree = new LabelBTreeFile(curr_dbname+"/dupObjBT",keytype,255,1);
+            dup_Objtree = new LabelBTreeFile(usedbname+"/dupObjBT",keytype,255,1);
             dup_Objtree.close();
         }
         catch(Exception e)
@@ -1011,8 +1009,8 @@ public class rdfDB implements GlobalConst {
         try
         {
             //System.out.println("Creating Triple Binary Tree file for given index option");
-            Triple_BTreeIndex = new TripleBTreeFile(curr_dbname+"/Triple_BTreeIndex",keytype,255,1);
-            Triple_BTreeIndex.close();
+            QuadrupleBTreeIndex = new QuadrupleBTreeFile(usedbname+"/Triple_BTreeIndex",keytype,255,1);
+            QuadrupleBTreeIndex.close();
         }
         catch(Exception e)
         {
@@ -1028,5 +1026,512 @@ public class rdfDB implements GlobalConst {
      *  @return int number of Triples
      */
 
+    public int getQuadrupleCnt()
+    {
+        try
+        {
+            QuadrupleHF = new QuadrupleHeapfile(usedbname+"/QuadrupleHF");
+            Total_Quadruples = QuadrupleHF.getRecCnt();
+        }
+        catch (Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+        return Total_Quadruples;
+    }
+
+    /**
+     *  Get count of Predicates(unique) in RDF DB
+     *  @return int number of distinct Predicates
+     */
+    public int getPredicateCnt()
+    {
+        try
+        {
+            Predicate_HF = new LabelHeapfile(usedbname+"/predicateHF");
+            Total_Predicates = Predicate_HF.getRecCnt();
+        }
+        catch (Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+        return Total_Predicates;
+    }
+
+    /**
+     *  Get count of Subjects(unique) in RDF DB
+     *  @return int number of distinct subjects
+     */
+    public int getSubjectCnt()
+    {
+        Total_Subjects = 0;
+        KeyDataEntry entry = null;
+        KeyDataEntry dup_entry = null;
+        try
+        {
+            QuadrupleBTree = new QuadrupleBTreeFile(curr_dbname+"/tripleBT");
+            int keytype = AttrType.attrString;
+            dup_tree = new LabelBTreeFile(usedbname+"/dupSubjBT");
+            //Start Scanning Btree to check if  predicate already present
+            QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(null,null);
+            do
+            {
+                entry = scan.get_next();
+                if(entry != null)
+                {
+                    String label = ((StringKey)(entry.key)).getKey();
+                    String[] temp;
+                    /* delimiter */
+                    String delimiter = ":";
+                    /* given string will be split by the argument delimiter provided. */
+                    temp = label.split(delimiter);
+                    String subject = temp[0] + temp[1];
+                    //Start Scaning Label Btree to check if subject already present
+                    KeyClass low_key = new StringKey(subject);
+                    KeyClass high_key = new StringKey(subject);
+                    LabelBTFileScan dup_scan = dup_tree.new_scan(low_key,high_key);
+                    dup_entry = dup_scan.get_next();
+                    if(dup_entry == null)
+                    {
+                        //subject not present in btree, hence insert
+                        dup_tree.insert(low_key,new LID(new PageId(Integer.parseInt(temp[1])),Integer.parseInt(temp[0])));
+
+                    }
+                    dup_scan.DestroyBTreeFileScan();
+
+                }
+
+            }while(entry!=null);
+            scan.DestroyBTreeFileScan();
+            QuadrupleBTree.close();
+
+            KeyClass low_key = null;
+            KeyClass high_key = null;
+            LabelBTFileScan dup_scan = dup_tree.new_scan(low_key,high_key);
+            do
+            {
+                dup_entry = dup_scan.get_next();
+                if(dup_entry!=null)
+                    Total_Subjects++;
+
+            }while(dup_entry!=null);
+            dup_scan.DestroyBTreeFileScan();
+            dup_tree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+        return Total_Subjects;
+    }
+
+    /**
+     *  Get count of Entities(unique) in RDF DB
+     *  @return int number of distinct Entities
+     */
+    public int getEntityCnt()
+    {
+        try
+        {
+            Entity_HF = new LabelHeapfile(usedbname+"/entityHF");
+            Total_Entities = Entity_HF.getRecCnt();
+        }
+        catch (Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+        return Total_Entities;
+    }
+
+    /**
+     *  Get count of Objects(unique) in RDF DB
+     *  @return int number of distinct objects
+     */
+    public int getObjectCnt()
+    {
+        Total_Objects = 0;
+        KeyDataEntry entry = null;
+        KeyDataEntry dup_entry = null;
+        try
+        {
+            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/tripleBT");
+            int keytype = AttrType.attrString;
+            dup_Objtree = new LabelBTreeFile(usedbname+"/dupObjBT");
+            //Start Scaning Btree to check if  predicate already present
+            QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(null,null);
+            do
+            {
+                entry = scan.get_next();
+                if(entry != null)
+                {
+                    String label = ((StringKey)(entry.key)).getKey();
+                    String[] temp;
+                    /* delimiter */
+                    String delimiter = ":";
+                    /* given string will be split by the argument delimiter provided. */
+                    temp = label.split(delimiter);
+                    String object = temp[4] + temp[5];
+                    //Start Scaning Label Btree to check if subject already present
+                    KeyClass low_key = new StringKey(object);
+                    KeyClass high_key = new StringKey(object);
+                    LabelBTFileScan dup_scan = dup_Objtree.new_scan(low_key,high_key);
+                    dup_entry = dup_scan.get_next();
+                    if(dup_entry == null)
+                    {
+                        //subject not present in btree, hence insert
+                        dup_Objtree.insert(low_key,new LID(new PageId(Integer.parseInt(temp[4])),Integer.parseInt(temp[5])));
+
+                    }
+                    dup_scan.DestroyBTreeFileScan();
+
+                }
+
+            }while(entry!=null);
+            scan.DestroyBTreeFileScan();
+            QuadrupleBTree.close();
+
+            KeyClass low_key = null;
+            KeyClass high_key = null;
+            LabelBTFileScan dup_scan = dup_Objtree.new_scan(low_key,high_key);
+            do
+            {
+                dup_entry = dup_scan.get_next();
+                if(dup_entry!=null)
+                    Total_Objects++;
+
+            }while(dup_entry!=null);
+            dup_scan.DestroyBTreeFileScan();
+            dup_Objtree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+        return Total_Objects;
+    }
+
+    /**
+     * Insert a entity into the EntityHeapFIle
+     * @param Entitylabel String representing Subject/Object
+     */
+    public EID insertEntity(String EntityLabel)
+    {
+        int KeyType = AttrType.attrString;
+        KeyClass key = new StringKey(EntityLabel);
+        EID entityid = null;
+
+        //Open ENTITY BTree Index file
+        try
+        {
+            Entity_BTree = new LabelBTreeFile(usedbname+"/entityBT");
+            //      LabelBT.printAllLeafPages(Entity_BTree.getHeaderPage());
+
+            LID lid = null;
+            KeyClass low_key = new StringKey(EntityLabel);
+            KeyClass high_key = new StringKey(EntityLabel);
+            KeyDataEntry entry = null;
+
+            //Start Scaning Btree to check if entity already present
+            LabelBTFileScan scan = Entity_BTree.new_scan(low_key,high_key);
+            entry = scan.get_next();
+            if(entry!=null)
+            {
+                if(EntityLabel.equals(((StringKey)(entry.key)).getKey()))
+                {
+                    //return already existing EID ( convert lid to EID)
+                    lid =  ((LabelLeafData)entry.data).getData();
+                    entityid = lid.returnEID();
+                    scan.DestroyBTreeFileScan();
+                    Entity_BTree.close();
+                    return entityid;
+                }
+            }
+
+            scan.DestroyBTreeFileScan();
+            //Insert into Entity HeapFile
+            lid = Entity_HF.insertRecord(EntityLabel.getBytes());
+
+            //Insert into Entity Btree file key,lid
+            Entity_BTree.insert(key,lid);
+
+            entityid = lid.returnEID();
+            Entity_BTree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println ("*** Error inserting entity ");
+            e.printStackTrace();
+        }
+
+        return entityid; //Return EID
+    }
+
+    /**
+     * Delete a entity into the EntityHeapFile
+     * @param Entitylabel String representing Subject/Object
+     * @return boolean success when deleted else false
+     */
+    public boolean deleteEntity(String EntityLabel)
+    {
+        boolean success = false;
+        int KeyType = AttrType.attrString;
+        KeyClass key = new StringKey(EntityLabel);
+        EID entityid = null;
+
+        //Open ENTITY BTree Index file
+        try
+        {
+            Entity_HF = new LabelHeapfile(usedbname+"/entityHF");
+            Entity_BTree = new LabelBTreeFile(usedbname+"/entityBT");
+            //      LabelBT.printAllLeafPages(Entity_BTree.getHeaderPage());
+
+            LID lid = null;
+            KeyClass low_key = new StringKey(EntityLabel);
+            KeyClass high_key = new StringKey(EntityLabel);
+            KeyDataEntry entry = null;
+
+            //Start Scaning Btree to check if entity already present
+            LabelBTFileScan scan = Entity_BTree.new_scan(low_key,high_key);
+            entry = scan.get_next();
+            if(entry!=null)
+            {
+                if(EntityLabel.equals(((StringKey)(entry.key)).getKey()))
+                {
+                    //System.out.println(((StringKey)(entry.key)).getKey());
+                    lid =  ((LabelLeafData)entry.data).getData();
+                    success = Entity_HF.deleteRecord(lid) & Entity_BTree.Delete(low_key,lid);
+                }
+            }
+            scan.DestroyBTreeFileScan();
+            Entity_BTree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println ("*** Error deleting entity " + e);
+            e.printStackTrace();
+        }
+        return success;
+    }
+    public PID insertPredicate(String PredicateLabel)
+    {
+        PID predicateid = null;
+        LID lid = null;
+
+        int KeyType = AttrType.attrString;
+        KeyClass key = new StringKey(PredicateLabel);
+
+        //Open PREDICATE BTree Index file
+        try
+        {
+            Predicate_BTree = new LabelBTreeFile(usedbname+"/predicateBT");
+            //LabelBT.printAllLeafPages(Predicate_BTree.getHeaderPage());
+            KeyClass low_key = new StringKey(PredicateLabel);
+            KeyClass high_key = new StringKey(PredicateLabel);
+            KeyDataEntry entry = null;
+
+            //Start Scaning Btree to check if  predicate already present
+            LabelBTFileScan scan = Predicate_BTree.new_scan(low_key,high_key);
+            entry = scan.get_next();
+            if(entry != null)
+            {
+                if(PredicateLabel.compareTo(((StringKey)(entry.key)).getKey()) == 0)
+                {
+                    //return already existing EID ( convert lid to EID)
+                    predicateid = ((LabelLeafData)(entry.data)).getData().returnPID();
+                    scan.DestroyBTreeFileScan();
+                    Predicate_BTree.close(); //Close the Predicate Btree file
+                    return predicateid;
+                }
+            }
+            scan.DestroyBTreeFileScan();
+            //Insert into Predicate HeapFile
+            lid = Predicate_HF.insertRecord(PredicateLabel.getBytes());
+            //Insert into Predicate Btree file key,lid
+            Predicate_BTree.insert(key,lid);
+            predicateid = lid.returnPID();
+            Predicate_BTree.close(); //Close the Predicate Btree file
+        }
+        catch(Exception e)
+        {
+            System.err.println (""+e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+        return predicateid;
+    }
+
+    public boolean deletePredicate(String PredicateLabel)
+    {
+        boolean success = false;
+        int KeyType = AttrType.attrString;
+        KeyClass key = new StringKey(PredicateLabel);
+        EID predicateid = null;
+
+        //Open ENTITY BTree Index file
+        try
+        {
+            Predicate_HF = new LabelHeapfile(usedbname+"/predicateHF");
+            Predicate_BTree = new LabelBTreeFile(usedbname+"/predicateBT");
+            //      LabelBT.printAllLeafPages(Entity_BTree.getHeaderPage());
+
+            LID lid = null;
+            KeyClass low_key = new StringKey(PredicateLabel);
+            KeyClass high_key = new StringKey(PredicateLabel);
+            KeyDataEntry entry = null;
+
+            //Start Scanning BTree to check if entity already present
+            LabelBTFileScan scan = Predicate_BTree.new_scan(low_key,high_key);
+            entry = scan.get_next();
+            if(entry!=null)
+            {
+                if(PredicateLabel.equals(((StringKey)(entry.key)).getKey()))
+                {
+                    //System.out.println(((StringKey)(entry.key)).getKey());
+                    lid =  ((LabelLeafData)entry.data).getData();
+                    success = Predicate_HF.deleteRecord(lid) & Predicate_BTree.Delete(low_key,lid);
+                }
+            }
+            scan.DestroyBTreeFileScan();
+            Predicate_BTree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println ("*** Error deleting predicate " + e);
+            e.printStackTrace();
+        }
+
+        return success;
+    }
+    public QID insertQuadruple(byte[] triplePtr)
+            throws Exception
+    {
+        QID Quadrupleid;
+        QID qid = null;
+        try
+        {
+            //Open Triple BTree Index file
+            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/tripleBT");
+            //TripleBT.printAllLeafPages(Triple_BTree.getHeaderPage());
+            int sub_slotNo = Convert.getIntValue(0,triplePtr);
+            int sub_pageNo = Convert.getIntValue(4,triplePtr);
+            int pred_slotNo = Convert.getIntValue(8,triplePtr);
+            int pred_pageNo = Convert.getIntValue(12,triplePtr);
+            int obj_slotNo = Convert.getIntValue(16,triplePtr);
+            int obj_pageNo = Convert.getIntValue(20,triplePtr);
+            double confidence =Convert.getDoubleValue(24,triplePtr);
+            String key = new String(Integer.toString(sub_slotNo) +':'+ Integer.toString(sub_pageNo) +':'+ Integer.toString(pred_slotNo) + ':' + Integer.toString(pred_pageNo) +':' + Integer.toString(obj_slotNo) +':'+ Integer.toString(obj_pageNo));
+            KeyClass low_key = new StringKey(key);
+            KeyClass high_key = new StringKey(key);
+            KeyDataEntry entry = null;
+
+            //Start Scaning Btree to check if  predicate already present
+            QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key,high_key);
+            entry = scan.get_next();
+            if(entry != null)
+            {
+                //System.out.println("Duplicate Triple found : " + ((StringKey)(entry.key)).getKey());
+                if(key.compareTo(((StringKey)(entry.key)).getKey()) == 0)
+                {
+                    //return already existing TID
+                    Quadrupleid = ((QuadrupleLeafData)(entry.data)).getData();
+                    Quadruple record = Triple_HF.getRecord(tripleid);
+                    double orig_confidence = record.getConfidence();
+                    if(orig_confidence > confidence)
+                    {
+                        Quadruple newRecord = new Quadruple(triplePtr,0,32);
+                        Triple_HF.updateRecord(tripleid,newRecord);
+                    }
+                    scan.DestroyBTreeFileScan();
+                    Triple_BTree.close();
+                    return tripleid;
+                }
+            }
+
+            //insert into triple heap file
+            //System.out.println("("+triplePtr+")");
+            qid= Triple_HF.insertTriple(triplePtr);
+
+            //System.out.println("Inserting triple key : "+ key + "tid : " + tid);
+            //insert into triple btree
+            QuadrupleBTree.insert(low_key,tid);
+
+            scan.DestroyBTreeFileScan();
+            QuadrupleBTree.close();
+        }
+        catch(Exception e)
+        {
+            System.err.println ("*** Error inserting triple record " + e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        return qid;
+    }
+
+    public boolean deleteTriple(byte[] triplePtr)
+    {
+        boolean success = false;
+        QID quadrupleid = null;
+        try
+        {
+            //Open Triple BTree Index file
+            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/tripleBT");
+            //TripleBT.printAllLeafPages(Triple_BTree.getHeaderPage());
+            int sub_slotNo = Convert.getIntValue(0,triplePtr);
+            int sub_pageNo = Convert.getIntValue(4,triplePtr);
+            int pred_slotNo = Convert.getIntValue(8,triplePtr);
+            int pred_pageNo = Convert.getIntValue(12,triplePtr);
+            int obj_slotNo = Convert.getIntValue(16,triplePtr);
+            int obj_pageNo = Convert.getIntValue(20,triplePtr);
+            double confidence =Convert.getDoubleValue(24,triplePtr);
+            String key = new String(Integer.toString(sub_slotNo) +':'+ Integer.toString(sub_pageNo) +':'+ Integer.toString(pred_slotNo) + ':' + Integer.toString(pred_pageNo) +':' + Integer.toString(obj_slotNo) +':'+ Integer.toString(obj_pageNo));
+            //System.out.println(key);
+            KeyClass low_key = new StringKey(key);
+            KeyClass high_key = new StringKey(key);
+            KeyDataEntry entry = null;
+
+            //Start Scaning Btree to check if  predicate already present
+            QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key,high_key);
+            entry = scan.get_next();
+            if(entry != null)
+            {
+                //System.out.println("Triple found : " + ((StringKey)(entry.key)).getKey());
+                if(key.compareTo(((StringKey)(entry.key)).getKey()) == 0)
+                {
+                    //return already existing TID
+                    quadrupleid = ((QuadrupleLeafData)(entry.data)).getData();
+                    if(quadrupleid!=null)
+                        success = Triple_HF.deleteRecord(quadrupleid);
+                }
+            }
+            scan.DestroyBTreeFileScan();
+            if(entry!=null)
+            {
+                if(low_key!=null && quadrupleid!=null)
+                    success = success & QuadrupleBTree.Delete(low_key,quadrupleid);
+            }
+
+            QuadrupleBTree.close();
+
+        }
+        catch(Exception e)
+        {
+            System.err.println ("*** Error deleting triple record " + e);
+            e.printStackTrace();
+            Runtime.getRuntime().exit(1);
+        }
+
+        return success;
+    }
 }//end of DB class
 
