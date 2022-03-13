@@ -169,7 +169,7 @@ public class BTSortedPage  extends HFPage{
    *@exception DeleteRecException error when delete
    * @param rid it specifies where a record will be deleted
    */
-  public  boolean deleteSortedRecord(QID rid)
+  public  boolean deleteSortedRecord(RID rid)
     throws DeleteRecException
     {
       try {
