@@ -3,8 +3,8 @@ package labelheap;
 import diskmgr.Page;
 import global.*;
 import heap.*;
-import quadrupleheap.Quadruple;
-import quadrupleheap.THFPage;
+// import quadrupleheap.Quadruple;
+// import quadrupleheap.THFPage;
 
 
 import java.io.IOException;
@@ -903,5 +903,10 @@ public class LabelHeapfile implements Filetype,  GlobalConst {
 
 
 		return true;
+	}
+
+	LScan openScan() throws InvalidTupleSizeException, IOException {
+		LScan newscan = new LScan(this);
+		return newscan;
 	}
 }// End of HeapFile 
