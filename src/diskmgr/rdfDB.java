@@ -1420,7 +1420,7 @@ public class rdfDB implements GlobalConst {
         try
         {
             //Open Triple BTree Index file
-            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/tripleBT");
+            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/QuadrupleBT");
             //TripleBT.printAllLeafPages(Triple_BTree.getHeaderPage());
             int sub_slotNo = Convert.getIntValue(0,triplePtr);
             int sub_pageNo = Convert.getIntValue(4,triplePtr);
@@ -1463,14 +1463,14 @@ public class rdfDB implements GlobalConst {
 
             //System.out.println("Inserting triple key : "+ key + "tid : " + tid);
             //insert into triple btree
-            QuadrupleBTree.insert(low_key,tid);
+            QuadrupleBTree.insert(low_key,qid);
 
             scan.DestroyBTreeFileScan();
             QuadrupleBTree.close();
         }
         catch(Exception e)
         {
-            System.err.println ("*** Error inserting triple record " + e);
+            System.err.println ("*** Error inserting Quadruple record " + e);
             e.printStackTrace();
             Runtime.getRuntime().exit(1);
         }
@@ -1485,7 +1485,7 @@ public class rdfDB implements GlobalConst {
         try
         {
             //Open Triple BTree Index file
-            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/tripleBT");
+            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/QuadrupleBT");
             //TripleBT.printAllLeafPages(Triple_BTree.getHeaderPage());
             int sub_slotNo = Convert.getIntValue(0,triplePtr);
             int sub_pageNo = Convert.getIntValue(4,triplePtr);
@@ -1526,7 +1526,7 @@ public class rdfDB implements GlobalConst {
         }
         catch(Exception e)
         {
-            System.err.println ("*** Error deleting triple record " + e);
+            System.err.println ("*** Error deleting Quadruple record " + e);
             e.printStackTrace();
             Runtime.getRuntime().exit(1);
         }
