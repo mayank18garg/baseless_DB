@@ -21,7 +21,7 @@ import java.io.IOException;
  * interface in BT.java
  * See those files for our {key,data} pairing interface and implementation.
  */
-public class QuadrupleBTIndexPage extends BTSortedPage{
+public class QuadrupleBTIndexPage extends QuadrupleBTSortedPage{
 
 
   /** pin the page with pageno, and get the corresponding BTIndexPage,
@@ -185,7 +185,7 @@ public class QuadrupleBTIndexPage extends BTSortedPage{
   /**  Iterators. 
    * One of the two functions: getFirst and getNext
    * which  provide an iterator interface to the records on a BTIndexPage.
-   *@param rid It will be modified and the first rid in the index page
+   *@param qid It will be modified and the first rid in the index page
    * will be passed out by itself. Input and Output parameter. 
    *@return return the first KeyDataEntry in the index page.
    *null if NO MORE RECORD
@@ -221,7 +221,7 @@ public class QuadrupleBTIndexPage extends BTSortedPage{
   /**Iterators.  
    * One of the two functions: get_first and get_next which  provide an
    * iterator interface to the records on a BTIndexPage.
-   *@param rid It will be modified and next rid will be passed out by itself.
+   *@param qid It will be modified and next rid will be passed out by itself.
    *         Input and Output parameter.
    *@return return the next KeyDataEntry in the index page. 
    *null if no more record

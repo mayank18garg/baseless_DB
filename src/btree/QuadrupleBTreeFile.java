@@ -344,7 +344,7 @@ public class QuadrupleBTreeFile extends QuadrupleIndexFile
   
   /** insert record with the given key and rid
    *@param key the key of the record. Input parameter.
-   *@param rid the rid of the record. Input parameter.
+   *@param qid the rid of the record. Input parameter.
    *@exception  KeyTooLongException key size exceeds the max keysize.
    *@exception KeyNotMatchException key is not integer key nor string key
    *@exception IOException error from the lower layer
@@ -953,7 +953,7 @@ public class QuadrupleBTreeFile extends QuadrupleIndexFile
   /** delete leaf entry  given its <key, qid> pair.
    *  `rid' is IN the data entry; it is not the id of the data entry)
    *@param key the key in pair <key, qid>. Input Parameter.
-   *@param rid the rid in pair <key, qid>. Input Parameter.
+   *@param qid the rid in pair <key, qid>. Input Parameter.
    *@return true if deleted. false if no such record.
    *@exception DeleteFashionException neither full delete nor naive delete
    *@exception LeafRedistributeException redistribution error in leaf pages
@@ -1168,7 +1168,7 @@ public class QuadrupleBTreeFile extends QuadrupleIndexFile
 	   IteratorException
     {
 		QuadrupleBTLeafPage leafPage;
-      QID curRid=new QID();  // iterator
+      QID curQid=new QID();  // iterator
       KeyClass curkey;
       QID dummyQid;
       PageId nextpage;
