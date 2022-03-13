@@ -5,10 +5,13 @@ package diskmgr;
 import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
+import quadrupleheap.QuadrupleHeapfile;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+
+//DB.java
 
 public class rdfDB implements GlobalConst {
 
@@ -16,7 +19,9 @@ public class rdfDB implements GlobalConst {
   private static final int bits_per_page = MAX_SPACE * 8;
 
 
-  /** Open the database with the given name.
+
+
+    /** Open the database with the given name.
    *
    * @param name DB_name
    *
