@@ -1045,7 +1045,7 @@ public class rdfDB1 implements GlobalConst {
         try
         {
             Predicate_HF = new LabelHeapfile(usedbname+"/predicateHF");
-            Total_Predicates = Predicate_HF.getQuadrupleCnt();
+            Total_Predicates = Predicate_HF.getPredicateCnt();
         }
         catch (Exception e)
         {
@@ -1134,7 +1134,7 @@ public class rdfDB1 implements GlobalConst {
         try
         {
             Entity_HF = new LabelHeapfile(usedbname+"/entityHF");
-            Total_Entities = Entity_HF.getQuadrupleCnt();
+            Total_Entities = Entity_HF.getEntityCnt();
         }
         catch (Exception e)
         {
@@ -1526,6 +1526,49 @@ public class rdfDB1 implements GlobalConst {
         }
 
         return success;
+    }
+
+    public Stream openStream(String dbname,int orderType, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter)
+	  {
+      Stream streamObj = null;
+      try {
+        streamObj = new Stream( dbname, orderType, subjectFilter,  predicateFilter, objectFilter, confidenceFilter);
+      } 
+      catch(Exception e){
+        e.printStackTrace();
+      }
+
+      return streamObj;
+
+	  }
+
+    public Stream openStreamWithoutSort(String dbname, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter)
+    {
+      Stream streamObj= null;
+      try {
+        streamObj = new Stream( dbname, 0, subjectFilter,  predicateFilter, objectFilter, confidenceFilter);
+      } 
+      catch(Exception e){
+        e.printStackTrace();
+      }
+      return streamObj;
+
+    }
+
+    public QuadrupleHeapfile getQuadrupleHF(){
+      return QuadrupleHF;
+    }
+
+    public LabelHeapfile getEntity_HF(){
+      return Entity_HF;
+    }
+
+    public LabelHeapfile getPredicate_HF(){
+      return Predicate_HF;
+    }
+
+    public QuadrupleBTreefile getQuadrupleBT(){
+      return QuadrupleBT;
     }
 }//end of DB class
 
