@@ -19,6 +19,14 @@ public class Stream{
     public boolean scanOnBTree = false;
     public TScan iterator = null;
     private boolean scan_entire_heapfile = false;
+    private Quadruple scanOnBTreeQuadruple = null;
+    private String _subjectFilter;
+    private String _predicateFilter;
+    private String _objectFilter;
+    private double _confidenceFilter;
+    public static EID entitySubjectID = new EID();
+    public static EID entityObjectID = new EID();
+    public static PID predicateID = new PID();
 
     //Implement sortOrder function after the iterator is done
 
@@ -43,22 +51,22 @@ public class Stream{
                     }
                     else{
                         boolean result = true;
-                        Label subject = SystemDefs.JavabaseDB.getEntity_HF().getLabel(quadruple.getSubjectID().returnLID());
-                        Label object = SystemDefs.JavabaseDB.getEntity_HF().getLabel(quadruple.getObjectID().returnLID());
-                        Label predicate = SystemDefs.JavabaseDB.getPredicate_HF.getLabel(record.getPredicateID().returnLID());
+                        Label subject = SystemDefs.JavabaseDB.getEntity_HF().getLabel(quadruple.getSubjecqid().returnLID());
+                        Label object = SystemDefs.JavabaseDB.getEntity_HF().getLabel(quadruple.getOubjecqid().returnLID());
+                        Label predicate = SystemDefs.JavabaseDB.getPredicate_HF.getLabel(quadruple.getPredicateID().returnLID());
                         double confidence = quadruple.getConfidence();
 
                         if(!subjectNull){
-                            result = result & (subjectFilter.compareTo(subject.getLabel()) == 0);
+                            result = result & (_subjectFilter.compareTo(subject.getLabel()) == 0);
                         }
                         if(!predicateNull){
-                            result = result & (predicateFilter.compareTo(predicate.getLabel()) == 0);
+                            result = result & (_predicateFilter.compareTo(predicate.getLabel()) == 0);
                         }
                         if(!objectNull){
-                            result = result & (objectFilter.compareTo(object.getLabel()) == 0);
+                            result = result & (_objectFilter.compareTo(object.getLabel()) == 0);
                         }
                         if(!confidenceNull){
-                            result = result & (record.getConfidence() >= confidenceFilter);
+                            result = result & (quadruple.getConfidence() >= _confidenceFilter);
                         }
                         
                         if(result)
@@ -114,23 +122,23 @@ public class Stream{
         }
 
         else{
-            if(Integer.parseInt(indexoption) == 1 && !confidence_null)
+            if(Integer.parseInt(indexOption) == 1 && !confidenceNull)
             {
                 scanBTConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             }
-            else if(Integer.parseInt(indexoption) == 2 && !subject_null && !confidence_null)
+            else if(Integer.parseInt(indexOption) == 2 && !subjectNull && !confidenceNull)
             {
                 scanBTSubjectConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             }
-            else if(Integer.parseInt(indexoption) == 3 && !object_null && !confidence_null)
+            else if(Integer.parseInt(indexOption) == 3 && !objectNull && !confidenceNull)
             {
                 scanBTObjectConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             }
-            else if(Integer.parseInt(indexoption) == 4 && !predicate_null && !confidence_null)
+            else if(Integer.parseInt(indexOption) == 4 && !predicateNull && !confidenceNull)
             {
-                scanBTPrediateConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+                scanBTPredicateConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             }
-            else if(Integer.parseInt(indexoption) == 5 && !subject_null)
+            else if(Integer.parseInt(indexOption) == 5 && !subjectNull)
             {
                 scanBTSubjectIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             }
@@ -153,24 +161,24 @@ public class Stream{
 
     public boolean scanBTreeIndex(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter){
         
-        if(getEID(subject) != null){
-            entitySubjectID = getEID(subject).returnEID();
+        if(getEID(subjectFilter) != null){
+            entitySubjectID = getEID(subjectFilter).returnEID();
         }
         else{
 			System.out.println("No triple found");
 			return false;
 		}
 
-        if(getPredicate(predicate) != null){
-            predicateID = getPredicateID(predicate).returnPredicateID();
+        if(getPredicateID(predicateFilter) != null){
+            predicateID = getPredicateID(predicateFilter).returnPID();
         }
         else{
 			System.out.println("No triple found");
 			return false;
 		}
 
-        if(getEID(object) != null){
-            entityObjectID = getEID(object).returnEID();
+        if(getEID(objectFilter) != null){
+            entityObjectID = getEID(objectFilter).returnEID();
         }
         else{
 			System.out.println("No triple found");
@@ -183,7 +191,7 @@ public class Stream{
         KeyClass high_key = new StringKey(key);
         KeyDataEntry entry = null;
         
-        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTree();
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBT();
         QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHF();
         LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntity_HF();
         LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicate_HF();
@@ -191,11 +199,11 @@ public class Stream{
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, high_key);
         entry = scan.get_next();
         if(entry != null){
-            if(key.compareTo(((StringKey)(entry.key)).getKey) == 0){
+            if(key.compareTo(((StringKey)(entry.key)).getKey()) == 0){
                 QID quadrupleID = ((QuadrupleLeafData)(entry.data)).getData();
                 Quadruple record = QuadrupleHF.getQuadruple(quadrupleID);
                 double originalConfidence = record.getConfidence();
-                if(originalConfidence > confidence){
+                if(originalConfidence > confidenceFilter){
                     scanOnBTreeQuadruple = new Quadruple(record);
                 }
             }
@@ -215,7 +223,7 @@ public class Stream{
             LabelHeapBTFileScan scan = Entity_BTree.new_scan(low_key, high_key);
             entry = scan.get_next();
             if(entry != null){
-                eid = ((LabelLeafData)entry.data).getData();
+                eid = ((LabelHeapLeafData)entry.data).getData();
             }
             else{
                 System.out.println("No quadruples found with given subject/object");
@@ -239,7 +247,7 @@ public class Stream{
             LabelHeapBTFileScan scan = Predicate_BTree.new_scan(low_key, high_key);
             entry = scan.get_next();
             if(entry != null){
-                predicateID = ((LabelLeafData)entry.data).getData();
+                predicateID = ((LabelHeapLeafData)entry.data).getData();
             }
             else{
                 System.out.println("No quadruples found with given predicate");
@@ -273,13 +281,13 @@ public class Stream{
         KeyClass low_key = new StringKey(Double.toString(confidenceFilter));
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, null);
 
-        while((entry.get_next()) != null){
+        while((entry = scan.get_next()) != null){
 
             result = true;
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
-            subject = Entity_HF.getLabel(record.getSubjectID().returnLID());
-            object = Entity_HF.getLabel(record.getObjectID().returnLID());
+            subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!subjectNull){
@@ -322,13 +330,13 @@ public class Stream{
         KeyClass low_key = new StringKey(subjectFilter + ":" + confidenceFilter);
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, null);
 
-        while((entry.get_next()) != null){
+        while((entry = scan.get_next()) != null){
 
             result = true;
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
-            subject = Entity_HF.getLabel(record.getSubjectID().returnLID());
-            object = Entity_HF.getLabel(record.getObjectID().returnLID());
+            subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!subjectNull){
@@ -373,13 +381,13 @@ public class Stream{
         KeyClass low_key = new StringKey(predicateFilter + ":" + confidenceFilter);
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, null);
 
-        while((entry.get_next()) != null){
+        while((entry = scan.get_next()) != null){
 
             result = true;
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
-            subject = Entity_HF.getLabel(record.getSubjectID().returnLID());
-            object = Entity_HF.getLabel(record.getObjectID().returnLID());
+            subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!subjectNull){
@@ -424,13 +432,13 @@ public class Stream{
         KeyClass low_key = new StringKey(objectFilter + ":" + confidenceFilter);
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, null);
 
-        while((entry.get_next()) != null){
+        while((entry = scan.get_next()) != null){
 
             result = true;
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
-            subject = Entity_HF.getLabel(record.getSubjectID().returnLID());
-            object = Entity_HF.getLabel(record.getObjectID().returnLID());
+            subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!subjectNull){
@@ -476,13 +484,13 @@ public class Stream{
         KeyClass high_key = new StringKey(subjectFilter);
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, high_key);
 
-        while((entry.get_next()) != null){
+        while((entry = scan.get_next()) != null){
 
             result = true;
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
-            subject = Entity_HF.getLabel(record.getSubjectID().returnLID());
-            object = Entity_HF.getLabel(record.getObjectID().returnLID());
+            subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!predicateNull){
@@ -506,6 +514,10 @@ public class Stream{
 
     private void scanEntireHeapFile(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter){
         try{
+            _subjectFilter = subjectFilter;
+            _predicateFilter = predicateFilter;
+            _objectFilter = objectFilter;
+            _confidenceFilter = confidenceFilter;
             Result_HF = SystemDefs.JavabaseDB.getQuadrupleHF();
         }
         catch(Exception e){
