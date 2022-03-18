@@ -25,9 +25,6 @@ public class rdfDB extends DB implements GlobalConst {
 
 	private String curr_dbname; 				//RDF Database name
 
-	private LabelHeapBTreeFile dup_tree;        	//BTree file for duplicate subjects
-	private LabelHeapBTreeFile dup_Objtree;     	//BTree file for duplicate objects
-
 	private int Total_Subjects = 0; 			//Total count of subjects in RDF
 	private int Total_Objects = 0; 				//Total count of objects in RDF
 	private int Total_Predicates = 0; 			//Total count of predicates in RDF
@@ -102,16 +99,6 @@ public class rdfDB extends DB implements GlobalConst {
 				Quadruple_BTree.close();
 				//Triple_BTree.destroyFile();
 			}
-			if(dup_tree != null)
-			{
-				dup_tree.close(); 
-				//dup_tree.destroyFile();
-			}
-			if(dup_Objtree != null)
-			{
-				dup_Objtree.close();
-				//dup_Objtree.destroyFile();
-			}
 			if(Quadruple_BTreeIndex != null)
 			{
 				Quadruple_BTreeIndex.close();
@@ -128,49 +115,7 @@ public class rdfDB extends DB implements GlobalConst {
 		}
 	}
 
-  /**
-	 * Open an existing rdf database
-	 * @param name Database name
-	 */
-	public void openrdfDB(String dbname,int type)
-	{
-		curr_dbname = new String(dbname);
-		try 
-		{
-			openDB(dbname);
-			rdfDB(type);
-		}
-		catch (Exception e) 
-		{
-			System.err.println (""+e);
-			e.printStackTrace();
-			Runtime.getRuntime().exit(1);
-		}
-	}
-
-  /**
-	 * Create a new RDF database
-	 * @param dbname Database name
-	 * @param num_pages Num of pages to allocate for the database
-	 * @param type different indexing types to use for the database
-	 */
-	public void openrdfDB(String dbname,int num_pages,int type)
-	{
-		curr_dbname = new String(dbname);
-		try
-		{
-			openDB(dbname,num_pages);
-			rdfDB(type);
-		}
-		catch(Exception e)
-		{
-
-			System.err.println (""+e);
-			e.printStackTrace();
-			Runtime.getRuntime().exit(1);
-		}
-	}
-
+  
   /**Constructor for the RDF database. 
 	 * @param type is an integer denoting the different clus-tering and indexing strategies you will use for the rdf database.   
 	 * @Note: Each RDF database contains:
@@ -179,7 +124,7 @@ public class rdfDB extends DB implements GlobalConst {
 	 * and another LabelHeapfile to store subject labels. 
 	 * You can create as many btree index files as you want over these triple and label heap files
 	 */
-	public void rdfDB(int type) 
+	public rdfDB(int type) 
 	{
 		int keytype = AttrType.attrString;
 
@@ -283,38 +228,39 @@ public class rdfDB extends DB implements GlobalConst {
 			Runtime.getRuntime().exit(1);
 		}
 
-		try
-		{
-			//System.out.println("Creating new Label Binary Tree file for checking duplicate subjects");
-			dup_tree = new LabelHeapBTreeFile(curr_dbname+"/dupSubjBT",keytype,255,1);
-			dup_tree.close();
-		}
-		catch(Exception e)
-		{
-			System.err.println (""+e);
-			e.printStackTrace();
-			Runtime.getRuntime().exit(1);
-		}
+		// try
+		// {
+		// 	//System.out.println("Creating new Label Binary Tree file for checking duplicate subjects");
+		// 	dup_tree = new LabelHeapBTreeFile(curr_dbname+"/dupSubjBT",keytype,255,1);
+		// 	dup_tree.close();
+		// }
+		// catch(Exception e)
+		// {
+		// 	System.err.println (""+e);
+		// 	e.printStackTrace();
+		// 	Runtime.getRuntime().exit(1);
+		// }
 
-		try
-		{
-			//System.out.println("Creating new Label Binary Tree file for checking duplicate objects");
-			dup_Objtree = new LabelHeapBTreeFile(curr_dbname+"/dupObjBT",keytype,255,1);
-			dup_Objtree.close();
-		}
-		catch(Exception e)
-		{
-			System.err.println (""+e);
-			e.printStackTrace();
-			Runtime.getRuntime().exit(1);
-		}
+		// try
+		// {
+		// 	//System.out.println("Creating new Label Binary Tree file for checking duplicate objects");
+		// 	dup_Objtree = new LabelHeapBTreeFile(curr_dbname+"/dupObjBT",keytype,255,1);
+		// 	dup_Objtree.close();
+		// }
+		// catch(Exception e)
+		// {
+		// 	System.err.println (""+e);
+		// 	e.printStackTrace();
+		// 	Runtime.getRuntime().exit(1);
+		// }
 
 		//Now create btree index files as per the index option
 		try
 		{
 			//System.out.println("Creating Triple Binary Tree file for given index option");
-			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
-			Quadruple_BTreeIndex.close();
+			// Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			// Quadruple_BTreeIndex.close();
+			createIndex(type);
 		}
 		catch(Exception e)
 		{
@@ -888,10 +834,10 @@ public class rdfDB extends DB implements GlobalConst {
 			{
 				confidence = quadruple.getConfidence();
 				String temp = Double.toString(confidence);
-				// Label subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
-				String subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				Label subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				// String subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
 				//System.out.println("Subject--> "+subject.getLabelKey());
-				KeyClass key = new StringKey(subject+":"+temp);
+				KeyClass key = new StringKey(subject.getLabel()+":"+temp);
 				//System.out.println("Inserting into Btree key"+ subject.getLabelKey() + ":" + temp + " tid "+tid);
 				Quadruple_BTreeIndex.insert(key,qid); 
 			}
@@ -946,10 +892,10 @@ public class rdfDB extends DB implements GlobalConst {
 			{
 				confidence = quadruple.getConfidence();
 				String temp = Double.toString(confidence);
-				// Label object = Entity_HF.getLabel(quadruple.getObjecqid().returnLID());
-				String object = Entity_HF.getLabel(quadruple.getObjecqid().returnLID());
+				Label object = Entity_HF.getLabel(quadruple.getObjecqid().returnLID());
+				// String object = Entity_HF.getLabel(quadruple.getObjecqid().returnLID());
 				//System.out.println("Subject--> "+subject.getLabelKey());
-				KeyClass key = new StringKey(object+":"+temp);
+				KeyClass key = new StringKey(object.getLabel()+":"+temp);
 				//System.out.println("Inserting into Btree key"+ object.getLabelKey() + ":" + temp + " tid "+tid);
 				Quadruple_BTreeIndex.insert(key,qid); 
 			}
@@ -1004,10 +950,10 @@ public class rdfDB extends DB implements GlobalConst {
 			{
 				confidence = quadruple.getConfidence();
 				String temp = Double.toString(confidence);
-				// Label predicate = Predicate_HF.getLabel(quadruple.getPredicateID().returnLID());
-				String predicate = Predicate_HF.getLabel(quadruple.getPredicateID().returnLID());
+				Label predicate = Predicate_HF.getLabel(quadruple.getPredicateID().returnLID());
+				// String predicate = Predicate_HF.getLabel(quadruple.getPredicateID().returnLID());
 				//System.out.println("Subject--> "+subject.getLabelKey());
-				KeyClass key = new StringKey(predicate+":"+temp);
+				KeyClass key = new StringKey(predicate.getLabel()+":"+temp);
 				//System.out.println("Inserting into Btree key"+ predicate.getLabelKey() + ":" + temp + " tid "+tid);
 				Quadruple_BTreeIndex.insert(key,qid); 
 			}
@@ -1067,9 +1013,9 @@ public class rdfDB extends DB implements GlobalConst {
 
 			while((quadruple = am.getNext(qid)) != null)
 			{
-				// Label subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
-				String subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
-				KeyClass key = new StringKey(subject);
+				Label subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				// String subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				KeyClass key = new StringKey(subject.getLabel());
 				//     entry = null;
 
 					//Start Scanning Btree to check if subject already present
