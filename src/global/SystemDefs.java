@@ -36,13 +36,36 @@ public class SystemDefs {
       }
       
       init(real_dbname,real_logname, num_pgs, logsize,
-	   bufpoolsize, replacement_policy);
+	   bufpoolsize, replacement_policy, new Integer(null));
     }
-  
-  
-  public void init( String dbname, String logname,
+
+    public SystemDefs(String dbname, int num_pages, int bufpoolsize, String replacement_policy, int indexoption) {
+
+        int logsize;
+
+        String real_logname = new String(dbname);
+        String real_dbname = new String(dbname);
+
+        if (num_pages == 0) {
+            logsize = 500;
+        }
+        else {
+            logsize = 3*num_pages;
+        }
+
+        if (replacement_policy == null) {
+            replacement_policy = new String("Clock");
+        }
+
+        init(real_dbname,real_logname, num_pages, logsize,
+                bufpoolsize, replacement_policy, indexoption);
+
+    }
+
+
+    public void init( String dbname, String logname,
 		    int num_pgs, int maxlogsize,
-		    int bufpoolsize, String replacement_policy )
+		    int bufpoolsize, String replacement_policy , int indexoption)
     {
       
       boolean status = true;
@@ -54,7 +77,7 @@ public class SystemDefs {
       
       try {
 	JavabaseBM = new BufMgr(bufpoolsize, replacement_policy);
-	JavabaseDB = new DB();
+	JavabaseDB = new rdfDB(indexoption);
 /*
 	JavabaseCatalog = new Catalog(); 
 */

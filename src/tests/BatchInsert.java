@@ -11,7 +11,7 @@ import java.io.*;
 public class BatchInsert {
 
     static SystemDefs sysdef;
-    //static QuadrupleHeapfile quadrupleHeapfile;
+
     public static void main(String[] args)
     {
 
@@ -137,11 +137,11 @@ public class BatchInsert {
         }
     }
 
-    private static void db_stats() {
-//        System.out.println("Quadruple count: " + sysdef.JavabaseDB.getQuadrupleCnt());
-//        System.out.println("Entity count:" + sysdef.JavabaseDB.getEntityCnt());
-//        System.out.println("Predicate count:" +  sysdef.JavabaseDB.getPredicateCnt());
-//        System.out.println("Subject count:" + sysdef.JavabaseDB.getSubjectCnt());
-//        System.out.println("Object count:" + sysdef.JavabaseDB.getObjectCnt());
+    public static void db_stats() {
+        System.out.println("Quadruple count: " + sysdef.JavabaseDB.getQuadrupleCnt());
+        System.out.println("Entity count:" + sysdef.JavabaseDB.getEntityCnt());
+        System.out.println("Predicate count:" +  sysdef.JavabaseDB.getPredicateCnt());
+        System.out.println("Subject count:" + sysdef.JavabaseDB.getSubjectCnt());
+        System.out.println("Object count:" + sysdef.JavabaseDB.getObjectCnt());
     }
 }
