@@ -1,10 +1,14 @@
-package quadrupleheap;
+package labelheap;
 
 import diskmgr.Page;
 import global.*;
 import heap.*;
+// import quadrupleheap.Quadruple;
+// import quadrupleheap.THFPage;
 
-import java.io.*;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**  This heapfile implementation is directory-based. We maintain a
  *  directory of info about the data pages (which are of type HFPage
@@ -41,7 +45,7 @@ interface  Filetype {
   
 } // end of Filetype
 
-public class QuadrupleHeapfile implements Filetype,  GlobalConst {
+public class LabelHeapfile implements Filetype,  GlobalConst {
   
   
   PageId      _firstDirPageId;   // page number of header page
@@ -49,84 +53,6 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
   private     boolean     _file_deleted;
   private     String 	 _fileName;
   private static int tempfilecount = 0;
-
-	public  QuadrupleHeapfile(String name)
-			throws HFException,
-			HFBufMgrException,
-			HFDiskMgrException,
-			IOException
-
-	{
-		// Give us a prayer of destructing cleanly if construction fails.
-		_file_deleted = true;
-		_fileName = null;
-
-		if(name == null)
-		{
-			// If the name is NULL, allocate a temporary name
-			// and no logging is required.
-			_fileName = "tempHeapFile";
-			String useId = new String("user.name");
-			String userAccName;
-			userAccName = System.getProperty(useId);
-			_fileName = _fileName + userAccName;
-
-			String filenum = Integer.toString(tempfilecount);
-			_fileName = _fileName + filenum;
-			_ftype = TEMP;
-			tempfilecount ++;
-
-		}
-		else
-		{
-			_fileName = name;
-			_ftype = ORDINARY;
-		}
-
-		// The constructor gets run in two different cases.
-		// In the first case, the file is new and the header page
-		// must be initialized.  This case is detected via a failure
-		// in the db->get_file_entry() call.  In the second case, the
-		// file already exists and all that must be done is to fetch
-		// the header page into the buffer pool
-
-		// try to open the file
-
-		Page apage = new Page();
-		_firstDirPageId = null;
-		if (_ftype == ORDINARY)
-			_firstDirPageId = get_file_entry(_fileName);
-
-		if(_firstDirPageId==null)
-		{
-			// file doesn't exist. First create it.
-			_firstDirPageId = newPage(apage, 1);
-			// check error
-			if(_firstDirPageId == null)
-				throw new HFException(null, "can't create new page");
-
-			add_file_entry(_fileName, _firstDirPageId);
-			// check error(new exception: Could not add file entry
-
-			HFPage firstDirPage = new HFPage();
-			firstDirPage.init(_firstDirPageId, apage);
-			PageId pageId = new PageId(INVALID_PAGE);
-
-			firstDirPage.setNextPage(pageId);
-			firstDirPage.setPrevPage(pageId);
-			unpinPage(_firstDirPageId, true /*dirty*/ );
-
-
-		}
-		_file_deleted = false;
-		// ASSERTIONS:
-		// - ALL private data members of class Heapfile are valid:
-		//
-		//  - _firstDirPageId valid
-		//  - _fileName valid
-		//  - no datapage pinned yet
-
-	} // end of constructor
 
 	private PageId newPage(Page page, int num)
 			throws HFBufMgrException {
@@ -208,6 +134,85 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 
 	} // end of freePage
 
+	public  LabelHeapfile(String name)
+			throws HFException,
+			HFBufMgrException,
+			HFDiskMgrException,
+			IOException
+
+	{
+
+		// Give us a prayer of destructing cleanly if construction fails.
+		_file_deleted = true;
+		_fileName = null;
+
+		if(name == null)
+		{
+			// If the name is NULL, allocate a temporary name
+			// and no logging is required.
+			_fileName = "tempHeapFile";
+			String useId = new String("user.name");
+			String userAccName;
+			userAccName = System.getProperty(useId);
+			_fileName = _fileName + userAccName;
+
+			String filenum = Integer.toString(tempfilecount);
+			_fileName = _fileName + filenum;
+			_ftype = TEMP;
+			tempfilecount ++;
+
+		}
+		else
+		{
+			_fileName = name;
+			_ftype = ORDINARY;
+		}
+
+		// The constructor gets run in two different cases.
+		// In the first case, the file is new and the header page
+		// must be initialized.  This case is detected via a failure
+		// in the db->get_file_entry() call.  In the second case, the
+		// file already exists and all that must be done is to fetch
+		// the header page into the buffer pool
+
+		// try to open the file
+
+		Page apage = new Page();
+		_firstDirPageId = null;
+		if (_ftype == ORDINARY)
+			_firstDirPageId = get_file_entry(_fileName);
+
+		if(_firstDirPageId==null)
+		{
+			// file doesn't exist. First create it.
+			_firstDirPageId = newPage(apage, 1);
+			// check error
+			if(_firstDirPageId == null)
+				throw new HFException(null, "can't create new page");
+
+			add_file_entry(_fileName, _firstDirPageId);
+			// check error(new exception: Could not add file entry
+
+			HFPage firstDirPage = new HFPage();
+			firstDirPage.init(_firstDirPageId, apage);
+			PageId pageId = new PageId(INVALID_PAGE);
+
+			firstDirPage.setNextPage(pageId);
+			firstDirPage.setPrevPage(pageId);
+			unpinPage(_firstDirPageId, true /*dirty*/ );
+
+
+		}
+		_file_deleted = false;
+		// ASSERTIONS:
+		// - ALL private data members of class Heapfile are valid:
+		//
+		//  - _firstDirPageId valid
+		//  - _fileName valid
+		//  - no datapage pinned yet
+
+	} // end of constructor
+
 	public void deleteFile()
 			throws InvalidSlotNumberException,
 			FileAlreadyDeletedException,
@@ -279,22 +284,337 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 
 	} // end of delete_file_entry
 
-	public QID insertQuadruple(byte[] quadruplePtr)
+	boolean deleteLabel(LID lid) throws Exception{
+
+		boolean status;
+		HFPage currentDirPage = new HFPage();
+		PageId currentDirPageId = new PageId();
+		LHFPage currentDataPage = new LHFPage();
+		PageId currentDataPageId = new PageId();
+		RID currentDataPageRid = new RID();
+
+		status = _findDataPage(lid,
+				currentDirPageId, currentDirPage,
+				currentDataPageId, currentDataPage,
+				currentDataPageRid);
+
+		if(status != true) return status;	// record not found
+
+		// ASSERTIONS:
+		// - currentDirPage, currentDirPageId valid and pinned
+		// - currentDataPage, currentDataPageid valid and pinned
+
+		// get datapageinfo from the current directory page:
+		Tuple atuple;
+
+		atuple = currentDirPage.returnRecord(currentDataPageRid);
+		DataPageInfo pdpinfo = new DataPageInfo(atuple);
+
+		// delete the record on the datapage
+		currentDataPage.deleteLRecord(lid);
+
+		pdpinfo.recct--;
+		pdpinfo.flushToTuple();	//Write to the buffer pool
+		if (pdpinfo.recct >= 1)
+		{
+			// more records remain on datapage so it still hangs around.
+			// we just need to modify its directory entry
+
+			pdpinfo.availspace = currentDataPage.available_space();
+			pdpinfo.flushToTuple();
+			unpinPage(currentDataPageId, true /* = DIRTY*/);
+
+			unpinPage(currentDirPageId, true /* = DIRTY */);
+
+
+		}
+		else
+		{
+			// the record is already deleted:
+			// we're removing the last record on datapage so free datapage
+			// also, free the directory page if
+			//   a) it's not the first directory page, and
+			//   b) we've removed the last DataPageInfo record on it.
+
+			// delete empty datapage: (does it get unpinned automatically? -NO, Ranjani)
+			unpinPage(currentDataPageId, false /*undirty*/);
+
+			freePage(currentDataPageId);
+
+			// delete corresponding DataPageInfo-entry on the directory page:
+			// currentDataPageRid points to datapage (from for loop above)
+
+			currentDirPage.deleteRecord(currentDataPageRid);
+
+
+			// ASSERTIONS:
+			// - currentDataPage, currentDataPageId invalid
+			// - empty datapage unpinned and deleted
+
+			// now check whether the directory page is empty:
+
+			currentDataPageRid = currentDirPage.firstRecord();
+
+			// st == OK: we still found a datapageinfo record on this directory page
+			PageId pageId;
+			pageId = currentDirPage.getPrevPage();
+			if((currentDataPageRid == null)&&(pageId.pid != INVALID_PAGE))
+			{
+				// the directory-page is not the first directory page and it is empty:
+				// delete it
+
+				// point previous page around deleted page:
+
+				HFPage prevDirPage = new HFPage();
+				pinPage(pageId, prevDirPage, false);
+
+				pageId = currentDirPage.getNextPage();
+				prevDirPage.setNextPage(pageId);
+				pageId = currentDirPage.getPrevPage();
+				unpinPage(pageId, true /* = DIRTY */);
+
+
+				// set prevPage-pointer of next Page
+				pageId = currentDirPage.getNextPage();
+				if(pageId.pid != INVALID_PAGE)
+				{
+					HFPage nextDirPage = new HFPage();
+					pageId = currentDirPage.getNextPage();
+					pinPage(pageId, nextDirPage, false);
+
+					//nextDirPage.openHFpage(apage);
+
+					pageId = currentDirPage.getPrevPage();
+					nextDirPage.setPrevPage(pageId);
+					pageId = currentDirPage.getNextPage();
+					unpinPage(pageId, true /* = DIRTY */);
+
+				}
+
+				// delete empty directory page: (automatically unpinned?)
+				unpinPage(currentDirPageId, false/*undirty*/);
+				freePage(currentDirPageId);
+
+
+			}
+			else
+			{
+				// either (the directory page has at least one more datapagerecord
+				// entry) or (it is the first directory page):
+				// in both cases we do not delete it, but we have to unpin it:
+
+				unpinPage(currentDirPageId, true /* == DIRTY */);
+
+
+			}
+		}
+		return true;
+
+	}
+
+	private boolean  _findDataPage( LID lid,
+									PageId dirPageId, HFPage dirpage,
+									PageId dataPageId, LHFPage datapage,
+									RID rpDataPageRid)
+			throws InvalidSlotNumberException,
+			InvalidTupleSizeException,
+			HFException,
+			HFBufMgrException,
+			HFDiskMgrException,
+			Exception
+	{
+		PageId currentDirPageId = new PageId(_firstDirPageId.pid);
+
+		HFPage currentDirPage = new HFPage();
+		LHFPage currentDataPage = new LHFPage();
+		RID currentDataPageRid = new RID();
+		PageId nextDirPageId = new PageId();
+		// datapageId is stored in dpinfo.pageId
+
+
+		pinPage(currentDirPageId, currentDirPage, false/*read disk*/);
+
+		Tuple atuple;
+
+		while (currentDirPageId.pid != INVALID_PAGE)
+		{// Start While01
+			// ASSERTIONS:
+			//  currentDirPage, currentDirPageId valid and pinned and Locked.
+
+			for( currentDataPageRid = currentDirPage.firstRecord();
+				 currentDataPageRid != null;
+				 currentDataPageRid = currentDirPage.nextRecord(currentDataPageRid))
+			{
+				try{
+					atuple = currentDirPage.getRecord(currentDataPageRid);
+				}
+				catch (InvalidSlotNumberException e)// check error! return false(done)
+				{
+					return false;
+				}
+
+				DataPageInfo dpinfo = new DataPageInfo(atuple);
+				try{
+					pinPage(dpinfo.pageId, currentDataPage, false/*Rddisk*/);
+
+
+					//check error;need unpin currentDirPage
+				}catch (Exception e)
+				{
+					unpinPage(currentDirPageId, false/*undirty*/);
+					dirpage = null;
+					datapage = null;
+					throw e;
+				}
+
+
+
+				// ASSERTIONS:
+				// - currentDataPage, currentDataPageRid, dpinfo valid
+				// - currentDataPage pinned
+
+				if(dpinfo.pageId.pid==lid.pageNo.pid)
+				{
+					//atuple = currentDataPage.returnRecord(qid);
+					// found user's record on the current datapage which itself
+					// is indexed on the current dirpage.  Return both of these.
+
+					dirpage.setpage(currentDirPage.getpage());
+					dirPageId.pid = currentDirPageId.pid;
+
+					datapage.setpage(currentDataPage.getpage());
+					dataPageId.pid = dpinfo.pageId.pid;
+
+					rpDataPageRid.pageNo.pid = currentDataPageRid.pageNo.pid;
+					rpDataPageRid.slotNo = currentDataPageRid.slotNo;
+					return true;
+				}
+				else
+				{
+					// user record not found on this datapage; unpin it
+					// and try the next one
+					unpinPage(dpinfo.pageId, false /*undirty*/);
+
+				}
+
+			}
+
+			// if we would have found the correct datapage on the current
+			// directory page we would have already returned.
+			// therefore:
+			// read in next directory page:
+
+			nextDirPageId = currentDirPage.getNextPage();
+			try{
+				unpinPage(currentDirPageId, false /*undirty*/);
+			}
+			catch(Exception e) {
+				throw new HFException (e, "heapfile,_find,unpinpage failed");
+			}
+
+			currentDirPageId.pid = nextDirPageId.pid;
+			if(currentDirPageId.pid != INVALID_PAGE)
+			{
+				pinPage(currentDirPageId, currentDirPage, false/*Rdisk*/);
+				if(currentDirPage == null)
+					throw new HFException(null, "pinPage return null page");
+			}
+
+
+		} // end of While01
+		// checked all dir pages and all data pages; user record not found:(
+
+		dirPageId.pid = dataPageId.pid = INVALID_PAGE;
+
+		return false;
+	} // end of _findDatapage
+
+	public int getQuadrupleCnt()
+			throws HFBufMgrException, IOException, InvalidSlotNumberException, InvalidTupleSizeException {
+		int answer = 0;
+		PageId currentDirPageId = new PageId(_firstDirPageId.pid);
+
+		PageId nextDirPageId = new PageId(0);
+
+		HFPage currentDirPage = new HFPage();
+		Page pageinbuffer = new Page();
+
+		while(currentDirPageId.pid != INVALID_PAGE)
+		{
+			pinPage(currentDirPageId, currentDirPage, false);
+
+			RID rid = new RID();
+			Tuple atuple;
+			for (rid = currentDirPage.firstRecord();
+				 rid != null;	// rid==NULL means no more record
+				 rid = currentDirPage.nextRecord(rid))
+			{
+				atuple = currentDirPage.getRecord(rid);
+				DataPageInfo dpinfo = new DataPageInfo(atuple);
+
+				answer += dpinfo.recct;
+			}
+
+			// ASSERTIONS: no more record
+			// - we have read all datapage records on
+			//   the current directory page.
+
+			nextDirPageId = currentDirPage.getNextPage();
+			unpinPage(currentDirPageId, false /*undirty*/);
+			currentDirPageId.pid = nextDirPageId.pid;
+		}
+
+		// ASSERTIONS:
+		// - if error, exceptions
+		// - if end of heapfile reached: currentDirPageId == INVALID_PAGE
+		// - if not yet end of heapfile: currentDirPageId valid
+
+
+		return answer;
+	}
+
+	public String getLabel(LID lid) throws Exception {
+
+		boolean status;
+		HFPage dirPage = new HFPage();
+		PageId currentDirPageId = new PageId();
+		LHFPage dataPage = new LHFPage();
+		PageId currentDataPageId = new PageId();
+		RID currentDataPageRid = new RID();
+
+		status = _findDataPage(lid,
+				currentDirPageId, dirPage,
+				currentDataPageId, dataPage,
+				currentDataPageRid);
+
+		if(status != true) return null; // record not found
+
+		Label aLabel = dataPage.getLRecord(lid);
+
+		unpinPage(currentDataPageId,false /*undirty*/);
+
+		unpinPage(currentDirPageId,false /*undirty*/);
+
+
+		return  aLabel.getLabel();
+	}
+
+	LID insertLabel(String label)
 			throws InvalidSlotNumberException,
 			InvalidTupleSizeException,
 			SpaceNotAvailableException,
 			HFException,
 			HFBufMgrException,
 			HFDiskMgrException,
-			IOException
-	{
+			IOException{
+
 		int dpinfoLen = 0;
-		int recLen = quadruplePtr.length;
+		int recLen = label.length(); // change this
 		boolean found;
 		RID currentDataPageRid = new RID();
 		Page pageinbuffer = new Page();
 		HFPage currentDirPage = new HFPage();
-		THFPage currentDataPage = new THFPage();
+		LHFPage currentDataPage = new LHFPage();
 
 		HFPage nextDirPage = new HFPage();
 		PageId currentDirPageId = new PageId(_firstDirPageId.pid);
@@ -490,8 +810,8 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 			throw new HFException(null, "can't find Data page");
 
 
-		QID qid;
-		qid = currentDataPage.insertQRecord(quadruplePtr);
+		LID lid;
+		lid = currentDataPage.insertLRecord(label.getBytes(StandardCharsets.UTF_8));
 
 		dpinfo.recct++;
 		dpinfo.availspace = currentDataPage.available_space();
@@ -513,11 +833,11 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 		unpinPage(currentDirPageId, true /* = DIRTY */);
 
 
-		return qid;
+		return lid;
 
 	}
 
-	private THFPage _newDatapage(DataPageInfo dpinfop)
+	private LHFPage _newDatapage(DataPageInfo dpinfop)
 			throws HFException,
 			HFBufMgrException,
 			HFDiskMgrException,
@@ -532,7 +852,7 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 
 		// initialize internal values of the new page:
 
-		THFPage hfpage = new THFPage();
+		LHFPage hfpage = new LHFPage();
 		hfpage.init(pageId, apage);
 
 		dpinfop.pageId.pid = pageId.pid;
@@ -543,349 +863,28 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 
 	} // end of _newDatapage
 
-	boolean deleteQuadruple(QID qid) throws Exception {
-		boolean status;
-		HFPage currentDirPage = new HFPage();
-		PageId currentDirPageId = new PageId();
-		THFPage currentDataPage = new THFPage();
-		PageId currentDataPageId = new PageId();
-		RID currentDataPageRid = new RID();
-
-		status = _findDataPage(qid,
-				currentDirPageId, currentDirPage,
-				currentDataPageId, currentDataPage,
-				currentDataPageRid);
-
-		if(status != true) return status;	// record not found
-
-		// ASSERTIONS:
-		// - currentDirPage, currentDirPageId valid and pinned
-		// - currentDataPage, currentDataPageid valid and pinned
-
-		// get datapageinfo from the current directory page:
-		Tuple atuple;
-
-		atuple = currentDirPage.returnRecord(currentDataPageRid);
-		DataPageInfo pdpinfo = new DataPageInfo(atuple);
-
-		// delete the record on the datapage
-		currentDataPage.deleteQRecord(qid);
-
-		pdpinfo.recct--;
-		pdpinfo.flushToTuple();	//Write to the buffer pool
-		if (pdpinfo.recct >= 1)
-		{
-			// more records remain on datapage so it still hangs around.
-			// we just need to modify its directory entry
-
-			pdpinfo.availspace = currentDataPage.available_space();
-			pdpinfo.flushToTuple();
-			unpinPage(currentDataPageId, true /* = DIRTY*/);
-
-			unpinPage(currentDirPageId, true /* = DIRTY */);
-
-
-		}
-		else
-		{
-			// the record is already deleted:
-			// we're removing the last record on datapage so free datapage
-			// also, free the directory page if
-			//   a) it's not the first directory page, and
-			//   b) we've removed the last DataPageInfo record on it.
-
-			// delete empty datapage: (does it get unpinned automatically? -NO, Ranjani)
-			unpinPage(currentDataPageId, false /*undirty*/);
-
-			freePage(currentDataPageId);
-
-			// delete corresponding DataPageInfo-entry on the directory page:
-			// currentDataPageRid points to datapage (from for loop above)
-
-			currentDirPage.deleteRecord(currentDataPageRid);
-
-
-			// ASSERTIONS:
-			// - currentDataPage, currentDataPageId invalid
-			// - empty datapage unpinned and deleted
-
-			// now check whether the directory page is empty:
-
-			currentDataPageRid = currentDirPage.firstRecord();
-
-			// st == OK: we still found a datapageinfo record on this directory page
-			PageId pageId;
-			pageId = currentDirPage.getPrevPage();
-			if((currentDataPageRid == null)&&(pageId.pid != INVALID_PAGE))
-			{
-				// the directory-page is not the first directory page and it is empty:
-				// delete it
-
-				// point previous page around deleted page:
-
-				HFPage prevDirPage = new HFPage();
-				pinPage(pageId, prevDirPage, false);
-
-				pageId = currentDirPage.getNextPage();
-				prevDirPage.setNextPage(pageId);
-				pageId = currentDirPage.getPrevPage();
-				unpinPage(pageId, true /* = DIRTY */);
-
-
-				// set prevPage-pointer of next Page
-				pageId = currentDirPage.getNextPage();
-				if(pageId.pid != INVALID_PAGE)
-				{
-					HFPage nextDirPage = new HFPage();
-					pageId = currentDirPage.getNextPage();
-					pinPage(pageId, nextDirPage, false);
-
-					//nextDirPage.openHFpage(apage);
-
-					pageId = currentDirPage.getPrevPage();
-					nextDirPage.setPrevPage(pageId);
-					pageId = currentDirPage.getNextPage();
-					unpinPage(pageId, true /* = DIRTY */);
-
-				}
-
-				// delete empty directory page: (automatically unpinned?)
-				unpinPage(currentDirPageId, false/*undirty*/);
-				freePage(currentDirPageId);
-
-
-			}
-			else
-			{
-				// either (the directory page has at least one more datapagerecord
-				// entry) or (it is the first directory page):
-				// in both cases we do not delete it, but we have to unpin it:
-
-				unpinPage(currentDirPageId, true /* == DIRTY */);
-
-
-			}
-		}
-		return true;
-	}
-
-	private boolean  _findDataPage( QID qid,
-									PageId dirPageId, HFPage dirpage,
-									PageId dataPageId, THFPage datapage,
-									RID rpDataPageRid)
-			throws InvalidSlotNumberException,
-			InvalidTupleSizeException,
-			HFException,
-			HFBufMgrException,
-			HFDiskMgrException,
-			Exception
-	{
-		PageId currentDirPageId = new PageId(_firstDirPageId.pid);
-
-		HFPage currentDirPage = new HFPage();
-		THFPage currentDataPage = new THFPage();
-		RID currentDataPageRid = new RID();
-		PageId nextDirPageId = new PageId();
-		// datapageId is stored in dpinfo.pageId
-
-
-		pinPage(currentDirPageId, currentDirPage, false/*read disk*/);
-
-		Tuple atuple;
-
-		while (currentDirPageId.pid != INVALID_PAGE)
-		{// Start While01
-			// ASSERTIONS:
-			//  currentDirPage, currentDirPageId valid and pinned and Locked.
-
-			for( currentDataPageRid = currentDirPage.firstRecord();
-				 currentDataPageRid != null;
-				 currentDataPageRid = currentDirPage.nextRecord(currentDataPageRid))
-			{
-				try{
-					atuple = currentDirPage.getRecord(currentDataPageRid);
-				}
-				catch (InvalidSlotNumberException e)// check error! return false(done)
-				{
-					return false;
-				}
-
-				DataPageInfo dpinfo = new DataPageInfo(atuple);
-				try{
-					pinPage(dpinfo.pageId, currentDataPage, false/*Rddisk*/);
-
-
-					//check error;need unpin currentDirPage
-				}catch (Exception e)
-				{
-					unpinPage(currentDirPageId, false/*undirty*/);
-					dirpage = null;
-					datapage = null;
-					throw e;
-				}
-
-
-
-				// ASSERTIONS:
-				// - currentDataPage, currentDataPageRid, dpinfo valid
-				// - currentDataPage pinned
-
-				if(dpinfo.pageId.pid==qid.pageNo.pid)
-				{
-					//atuple = currentDataPage.returnRecord(qid);
-					// found user's record on the current datapage which itself
-					// is indexed on the current dirpage.  Return both of these.
-
-					dirpage.setpage(currentDirPage.getpage());
-					dirPageId.pid = currentDirPageId.pid;
-
-					datapage.setpage(currentDataPage.getpage());
-					dataPageId.pid = dpinfo.pageId.pid;
-
-					rpDataPageRid.pageNo.pid = currentDataPageRid.pageNo.pid;
-					rpDataPageRid.slotNo = currentDataPageRid.slotNo;
-					return true;
-				}
-				else
-				{
-					// user record not found on this datapage; unpin it
-					// and try the next one
-					unpinPage(dpinfo.pageId, false /*undirty*/);
-
-				}
-
-			}
-
-			// if we would have found the correct datapage on the current
-			// directory page we would have already returned.
-			// therefore:
-			// read in next directory page:
-
-			nextDirPageId = currentDirPage.getNextPage();
-			try{
-				unpinPage(currentDirPageId, false /*undirty*/);
-			}
-			catch(Exception e) {
-				throw new HFException (e, "heapfile,_find,unpinpage failed");
-			}
-
-			currentDirPageId.pid = nextDirPageId.pid;
-			if(currentDirPageId.pid != INVALID_PAGE)
-			{
-				pinPage(currentDirPageId, currentDirPage, false/*Rdisk*/);
-				if(currentDirPage == null)
-					throw new HFException(null, "pinPage return null page");
-			}
-
-
-		} // end of While01
-		// checked all dir pages and all data pages; user record not found:(
-
-		dirPageId.pid = dataPageId.pid = INVALID_PAGE;
-
-		return false;
-	} // end of _findDatapage
-
-	public int getQuadrupleCnt()
-			throws HFBufMgrException, IOException, InvalidSlotNumberException, InvalidTupleSizeException {
-		int answer = 0;
-		PageId currentDirPageId = new PageId(_firstDirPageId.pid);
-
-		PageId nextDirPageId = new PageId(0);
-
-		HFPage currentDirPage = new HFPage();
-		Page pageinbuffer = new Page();
-
-		while(currentDirPageId.pid != INVALID_PAGE)
-		{
-			pinPage(currentDirPageId, currentDirPage, false);
-
-			RID rid = new RID();
-			Tuple atuple;
-			for (rid = currentDirPage.firstRecord();
-				 rid != null;	// rid==NULL means no more record
-				 rid = currentDirPage.nextRecord(rid))
-			{
-				atuple = currentDirPage.getRecord(rid);
-				DataPageInfo dpinfo = new DataPageInfo(atuple);
-
-				answer += dpinfo.recct;
-			}
-
-			// ASSERTIONS: no more record
-			// - we have read all datapage records on
-			//   the current directory page.
-
-			nextDirPageId = currentDirPage.getNextPage();
-			unpinPage(currentDirPageId, false /*undirty*/);
-			currentDirPageId.pid = nextDirPageId.pid;
-		}
-
-		// ASSERTIONS:
-		// - if error, exceptions
-		// - if end of heapfile reached: currentDirPageId == INVALID_PAGE
-		// - if not yet end of heapfile: currentDirPageId valid
-
-
-		return answer;
-	}
-
-	public Quadruple getQuadruple(QID qid)
-			throws Exception {
+	boolean updateLabel(LID lid, String newLabel)throws Exception {
 
 		boolean status;
 		HFPage dirPage = new HFPage();
 		PageId currentDirPageId = new PageId();
-		THFPage dataPage = new THFPage();
+		LHFPage dataPage = new LHFPage();
 		PageId currentDataPageId = new PageId();
 		RID currentDataPageRid = new RID();
 
-		status = _findDataPage(qid,
-				currentDirPageId, dirPage,
-				currentDataPageId, dataPage,
-				currentDataPageRid);
-
-		if(status != true) return null; // record not found
-
-//		Quadruple aquadruple = new Quadruple();
-		Quadruple aquadruple = dataPage.getQRecord(qid);
-
-		/*
-		 * getRecord has copied the contents of rid into recPtr and fixed up
-		 * recLen also.  We simply have to unpin dirpage and datapage which
-		 * were originally pinned by _findDataPage.
-		 */
-
-		unpinPage(currentDataPageId,false /*undirty*/);
-
-		unpinPage(currentDirPageId,false /*undirty*/);
-
-
-		return  aquadruple;  //(true?)OK, but the caller need check if atuple==NULL
-	}
-
-	boolean updateQuadruple(QID qid, Quadruple newQuadruple) throws Exception {
-
-		boolean status;
-		HFPage dirPage = new HFPage();
-		PageId currentDirPageId = new PageId();
-		THFPage dataPage = new THFPage();
-		PageId currentDataPageId = new PageId();
-		RID currentDataPageRid = new RID();
-
-		status = _findDataPage(qid,
+		status = _findDataPage(lid,
 				currentDirPageId, dirPage,
 				currentDataPageId, dataPage,
 				currentDataPageRid);
 
 		if(status != true) return status;	// record not found
-		Quadruple atuple = new Quadruple();
-		atuple = dataPage.returnQRecord(qid);
+		Label aLabel = new Label();
+		aLabel = dataPage.returnLRecord(lid);
 
 		// Assume update a record with a record whose length is equal to
 		// the original record
 
-		if(newQuadruple.getLength() != atuple.getLength())
+		if(aLabel==null)
 		{
 			unpinPage(currentDataPageId, false /*undirty*/);
 			unpinPage(currentDirPageId, false /*undirty*/);
@@ -895,7 +894,9 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 		}
 
 		// new copy of this record fits in old space;
-		atuple.quadrupleCopy(newQuadruple);
+		byte[] labelBytes = newLabel.getBytes(StandardCharsets.UTF_8);
+		Label tempLabel = new Label(labelBytes, 0, labelBytes.length);
+		aLabel.labelCopy(tempLabel);
 		unpinPage(currentDataPageId, true /* = DIRTY */);
 
 		unpinPage(currentDirPageId, false /*undirty*/);
@@ -904,9 +905,8 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 		return true;
 	}
 
-	TScan openScan() throws InvalidTupleSizeException, IOException {
-		TScan newscan = new TScan(this);
+	LScan openScan() throws InvalidTupleSizeException, IOException {
+		LScan newscan = new LScan(this);
 		return newscan;
 	}
-
 }// End of HeapFile 
