@@ -5,7 +5,7 @@ import global.LID;
 import global.QID;
 import global.SystemDefs;
 import quadrupleheap.Quadruple;
-import quadrupleheap.QuadrupleHeapfile;
+
 
 import java.io.*;
 
@@ -91,7 +91,9 @@ public class BatchInsert {
 
                 //insert subject
                 try{
+
                     sub_id = sysdef.JavabaseDB.insertEntity(subject).returnLID();
+
                 }
                 catch(Exception e){
                     System.out.println("Unable to insert subject:+"+subject);
@@ -100,13 +102,16 @@ public class BatchInsert {
                 //insert predicate
                 try{
                     pred_id = sysdef.JavabaseDB.insertPredicate(predicate).returnLID();
+
                 }catch (Exception e){
                     System.out.println("Unable to insert predicate:+"+predicate);
                 }
 
                 //insert subject
                 try {
+
                     obj_id = sysdef.JavabaseDB.insertEntity(object).returnLID();
+
                 }
                 catch(Exception e) {
                     System.out.println("Unable to insert object:+"+object);
@@ -129,9 +134,11 @@ public class BatchInsert {
 
             //parsing done
             System.out.println("Successfully inserted all records");
+
             //get pccounters
             System.out.println("Number of disk reads: " + PCounter.rcounter);
             System.out.println("Number of disk writes: " + PCounter.wcounter);
+
             System.out.println("Print stats for database");
             db_stats();
 
@@ -147,5 +154,6 @@ public class BatchInsert {
         System.out.println("Predicate count:" +  sysdef.JavabaseDB.getPredicateCnt());
         System.out.println("Subject count:" + sysdef.JavabaseDB.getSubjectCnt());
         System.out.println("Object count:" + sysdef.JavabaseDB.getObjectCnt());
+
     }
 }
