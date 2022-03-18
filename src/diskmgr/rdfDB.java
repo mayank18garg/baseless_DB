@@ -3,6 +3,7 @@
 package diskmgr;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.TreeSet;
 
 import bufmgr.*;
@@ -438,7 +439,7 @@ public class rdfDB extends DB implements GlobalConst {
                 if(entry!=null){
                     QID qid =  ((QuadrupleLeafData)entry.data).getData();
                     Quadruple quad = Quadruple_HF.getQuadruple(qid);
-                    EID obj_id = quad.getOubjecqid();
+                    EID obj_id = quad.getObjecqid();
                     objectSet.add(obj_id);
                 }
             }while(entry!=null);
@@ -776,8 +777,380 @@ public class rdfDB extends DB implements GlobalConst {
 	}
 
 	
+	//indexing
+	public void createIndex(int type){
+		switch(type){
+			case 1:
+			createIndex1();
+			break;
+
+			case 2:
+			createIndex2();
+			break;
+			
+			case 3:
+			createIndex3();
+			break;
 
 
+			case 4:
+			createIndex4();
+			break;
+
+			case 5:
+			createIndex5();
+			break;  
+		}
+    }
+
+	public void createIndex1()
+    {
+		//Unclustered BTree on confidence using sorted Heap File
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+					Quadruple_BTreeIndex.close();
+					Quadruple_BTreeIndex.destroyFile();
+					destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex.close();
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			double confidence = 0.0;
+			while((quadruple = am.getNext(qid)) != null)
+			{
+					confidence = quadruple.getConfidence();
+					String temp = Double.toString(confidence);
+					KeyClass key = new StringKey(temp);
+					//System.out.println("Inserting into Btree key"+ temp + " tid "+tid);
+					Quadruple_BTreeIndex.insert(key,qid); 
+					//System.out.println("Inserting into Btree key"+ temp + " tid "+tid);
+					
+			}
+			/*
+			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			KeyDataEntry entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Triple found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option1 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+	}
+
+	public void createIndex2()
+    {
+		//Unclustered BTree Index file on subject and confidence
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+					Quadruple_BTreeIndex.close();
+					Quadruple_BTreeIndex.destroyFile();
+					destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex.close();
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			double confidence = 0.0;
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				confidence = quadruple.getConfidence();
+				String temp = Double.toString(confidence);
+				// Label subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				String subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				//System.out.println("Subject--> "+subject.getLabelKey());
+				KeyClass key = new StringKey(subject+":"+temp);
+				//System.out.println("Inserting into Btree key"+ subject.getLabelKey() + ":" + temp + " tid "+tid);
+				Quadruple_BTreeIndex.insert(key,qid); 
+			}
+			/*
+			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			KeyDataEntry entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option2 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+    }
+
+	public void createIndex3()
+    {
+		//Unclustered BTree Index file on object and confidence
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+				Quadruple_BTreeIndex.close();
+				Quadruple_BTreeIndex.destroyFile();
+				destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex.close();
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/QuadrupleHF");
+			Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			double confidence = 0.0;
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				confidence = quadruple.getConfidence();
+				String temp = Double.toString(confidence);
+				// Label object = Entity_HF.getLabel(quadruple.getObjecqid().returnLID());
+				String object = Entity_HF.getLabel(quadruple.getObjecqid().returnLID());
+				//System.out.println("Subject--> "+subject.getLabelKey());
+				KeyClass key = new StringKey(object+":"+temp);
+				//System.out.println("Inserting into Btree key"+ object.getLabelKey() + ":" + temp + " tid "+tid);
+				Quadruple_BTreeIndex.insert(key,qid); 
+			}
+			/*
+			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			KeyDataEntry entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option3 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+    }
+
+	public void createIndex4()
+    {
+		//Unclustered BTree Index file on predicate and confidence
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+				Quadruple_BTreeIndex.close();
+				Quadruple_BTreeIndex.destroyFile();
+				destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex.close();
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			Predicate_HF = new LabelHeapfile(curr_dbname+"/predicateHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			double confidence = 0.0;
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				confidence = quadruple.getConfidence();
+				String temp = Double.toString(confidence);
+				// Label predicate = Predicate_HF.getLabel(quadruple.getPredicateID().returnLID());
+				String predicate = Predicate_HF.getLabel(quadruple.getPredicateID().returnLID());
+				//System.out.println("Subject--> "+subject.getLabelKey());
+				KeyClass key = new StringKey(predicate+":"+temp);
+				//System.out.println("Inserting into Btree key"+ predicate.getLabelKey() + ":" + temp + " tid "+tid);
+				Quadruple_BTreeIndex.insert(key,qid); 
+			}
+			/*
+			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			KeyDataEntry entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option4 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+    }
+
+	public void createIndex5()
+    {
+		//Unclustered BTree Index file on subject
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+				Quadruple_BTreeIndex.close();
+				Quadruple_BTreeIndex.destroyFile();
+				destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");	
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			KeyDataEntry entry = null;
+			QuadrupleBTFileScan scan = null;
+			
+			/*TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				// Label subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				String subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				KeyClass key = new StringKey(subject);
+				//     entry = null;
+
+					//Start Scanning Btree to check if subject already present
+				//     scan = Triple_BTreeIndex.new_scan(key,key);
+				//     entry = scan.get_next();
+				//     if(entry == null)
+				//     {
+				Quadruple_BTreeIndex.insert(key,qid); 
+							//System.out.println("Inserting into Btree key"+ subject.getLabelKey() + " tid "+tid);
+				//     }
+				//     else
+				//             System.out.println("Duplicate subject found "+ subject.getLabelKey() + " tid "+tid);
+							
+				//      scan.DestroyBTreeFileScan();
+			}
+			/*
+			scan = Triple_BTreeIndex.new_scan(null,null);
+			entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option5 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+    }
+
+	private void destroyIndex(String filename)
+    {
+		try
+		{
+			if(filename != null)
+			{
+					
+				QuadrupleBTreeFile bfile = new QuadrupleBTreeFile(filename);
+				
+				QuadrupleBTFileScan scan = bfile.new_scan(null,null);
+				QID qid = null;
+				KeyDataEntry entry = null;
+				ArrayList<KeyClass> keys = new ArrayList<KeyClass>();                   
+				ArrayList<QID> qids = new ArrayList<QID>();
+				int count = 0;                  
+
+				while((entry = scan.get_next())!= null)
+				{
+					qid =  ((QuadrupleLeafData)entry.data).getData();
+					keys.add(entry.key);
+					qids.add(qid);
+					count++;
+				}
+				scan.DestroyBTreeFileScan();
+
+				for(int i = 0; i < count ;i++)
+				{
+					//System.out.println("Deleting record having Key : " + keys.get(i) + " TID " + tids.get(i));
+					bfile.Delete(keys.get(i),qids.get(i));
+				}
+
+				bfile.close();  
+			}
+		}
+		catch(GetFileEntryException e1)
+		{
+			System.out.println("Firsttime No index present.. Expected");
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error destroying Index " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+    }
 
 }
 
