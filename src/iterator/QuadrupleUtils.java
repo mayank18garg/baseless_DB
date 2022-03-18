@@ -5,11 +5,13 @@ import javax.swing.text.html.parser.Entity;
 import global.AttrType;
 import global.LID;
 import global.SystemDefs;
+import labelheap.Label;
+import labelheap.LabelHeapfile;
 import quadrupleheap.Quadruple;
 
 public class QuadrupleUtils {
 
-    private static int compareSubject(Quadruple q1, Quadruple q2, LabelHeapFile Entity_HF){
+    private static int compareSubject(Quadruple q1, Quadruple q2, LabelHeapfile Entity_HF){
         try{
             Label subject1, subject2;
             String q1_subject, q2_subject;
@@ -23,13 +25,13 @@ public class QuadrupleUtils {
                 q1_subject = new String(c);
             else{
                 subject1 = Entity_HF.getLabel(lid1);
-                q1_subject = subject1.getLabelKey();
+                q1_subject = subject1.getLabel();
             }
             if(lid2.pageNo.pid < 0)
                 q2_subject = new String(c);
             else{
                 subject2 = Entity_HF.getLabel(lid2);
-                q2_subject = subject2.getLabelKey();
+                q2_subject = subject2.getLabel();
             }
             if(q1_subject.compareTo(q2_subject) > 0)
                 return 1;
@@ -44,7 +46,7 @@ public class QuadrupleUtils {
         }
     }
 
-    private static int comparePredicate(Quadruple q1, Quadruple q2, LabelHeapFile Predicate_HF){
+    private static int comparePredicate(Quadruple q1, Quadruple q2, LabelHeapfile Predicate_HF){
         try{
             Label predicate1, predicate2;
             String q1_predicate, q2_predicate;
@@ -58,13 +60,13 @@ public class QuadrupleUtils {
                 q1_predicate = new String(c);
             else{
                 predicate1 = Predicate_HF.getLabel(lid1);
-                q1_predicate = predicate1.getLabelKey();
+                q1_predicate = predicate1.getLabel();
             }
             if(lid2.pageNo.pid < 0)
                 q2_predicate = new String(c);
             else{
                 predicate2 = Predicate_HF.getLabel(lid2);
-                q2_predicate = predicate2.getLabelKey();
+                q2_predicate = predicate2.getLabel();
             }
             if(q1_predicate.compareTo(q2_predicate) > 0)
                 return 1;
@@ -79,13 +81,13 @@ public class QuadrupleUtils {
         }
     }
 
-    private static int compareObject(Quadruple q1, Quadruple q2, LabelHeapFile Entity_HF){
+    private static int compareObject(Quadruple q1, Quadruple q2, LabelHeapfile Entity_HF){
         try{
             Label object1, object2;
             String q1_object, q2_object;
             LID lid1, lid2;
-            lid1 = q1.getOubjecqid().returnLID();
-            lid2 = q2.getOubjecqid().returnLID();
+            lid1 = q1.getObjecqid().returnLID();
+            lid2 = q2.getObjecqid().returnLID();
             char[] c = new char[1];
             c[0] = Character.MIN_VALUE;
             
@@ -93,13 +95,13 @@ public class QuadrupleUtils {
                 q1_object = new String(c);
             else{
                 object1 = Entity_HF.getLabel(lid1);
-                q1_object = object1.getLabelKey();
+                q1_object = object1.getLabel();
             }
             if(lid2.pageNo.pid < 0)
                 q2_object = new String(c);
             else{
                 object2 = Entity_HF.getLabel(lid2);
-                q2_object = object2.getLabelKey();
+                q2_object = object2.getLabel();
             }
             if(q1_object.compareTo(q2_object) > 0)
                 return 1;
@@ -134,8 +136,8 @@ public class QuadrupleUtils {
 
     public static int CompareQuadrupleWithQuadruple(Quadruple q1, Quadruple q2, int quadruple_fld_no){
 
-        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntity_HF();
-        LabelHeapfile Predicaet_HF = SystemDefs.JavabaseDB.getPredicate_HF();
+        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
         int retVal = -2;
 
         switch(quadruple_fld_no){

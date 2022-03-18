@@ -160,7 +160,3 @@ public class QuadrupleBTFileScan extends IndexFileScan
 
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> main

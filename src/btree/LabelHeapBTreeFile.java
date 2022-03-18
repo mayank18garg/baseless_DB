@@ -885,11 +885,7 @@ public class LabelHeapBTreeFile extends LabelHeapIndexFile
 	      newLeafPage.deleteSortedRecord(firstLid);		
 	    }
 	  
-<<<<<<< HEAD
-	  if (LabelBT.keyCompare(key, undoEntry.key ) <  0) {
-=======
 	  if (LabelHeapBT.keyCompare(key, undoEntry.key ) <  0) {
->>>>>>> main
 	    //undo the final record
 	    if ( currentLeafPage.available_space() < 
 		 newLeafPage.available_space()) {
@@ -1853,7 +1849,3 @@ public class LabelHeapBTreeFile extends LabelHeapIndexFile
   
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> main

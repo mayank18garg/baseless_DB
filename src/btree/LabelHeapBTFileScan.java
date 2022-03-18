@@ -163,7 +163,3 @@ public class LabelHeapBTFileScan  extends IndexFileScan
 
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> main
