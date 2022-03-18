@@ -70,14 +70,6 @@ public class rdfDB extends DB implements GlobalConst {
 		return Quadruple_BTree;
 	}
 
-  /**
-	 * Default Constructor
-	 */
-	public rdfDB(int index) { }
-
-	/**
-	* Close RdfDB
-	*/
 	public void rdfcloseDB() 
 	throws 	PageUnpinnedException, InvalidFrameNumberException, HashEntryNotFoundException, ReplacerException
 	{

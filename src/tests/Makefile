@@ -1,11 +1,28 @@
-# modify the paths appropriately
-JDKPATH = /Library/Java/JavaVirtualMachines/jdk-17.0.2.jdk/Contents/Home
-# JDKPATH = /usr/java/jdk1.3.1_02
-LIBPATH = .:..
-CLASSPATH = $(LIBPATH)
+JDKPATH = /Users/jagrutidhondage/Library/Java/JavaVirtualMachines/openjdk-17.0.1/Contents/Home
+LIBPATH = /Users/jagrutidhondage/Documents/DBMSI/minjava/javaminibase/construction
+CLASSPATH = $(JDKPATH)/lib/classes.zip:.:..:$(LIBPATH)
 BINPATH = $(JDKPATH)/bin
 JAVAC = $(JDKPATH)/bin/javac -classpath $(CLASSPATH)
 JAVA  = $(JDKPATH)/bin/java  -classpath $(CLASSPATH)
+
+#test phase 2
+BatchInsert:BatchInsert.java
+	$(JAVAC) BatchInsert.java
+
+batchinsert: BatchInsert
+	$(JAVA) tests.BatchInsert
+
+Query:Query.java
+	$(JAVAC) Query.java
+
+query: Query
+	$(JAVA) tests.Query
+
+Report:Report.java
+	$(JAVAC) Report.java
+
+report: Report
+	$(JAVA) tests.Report
 
 # test buffer manager
 
@@ -23,7 +40,7 @@ DBTest:DBTest.java
 dbtest: DBTest
 	$(JAVA) tests.DBTest
 
-# test heapfile 
+# test heapfile
 
 HFTest:HFTest.java
 	$(JAVAC) TestDriver.java HFTest.java
@@ -72,5 +89,5 @@ sortmerge: SMJoin
 	$(JAVA) tests.SM_JoinTest
 
 
-
-
+clean:
+	\rm -f .class *~ \# core
