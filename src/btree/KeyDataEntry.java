@@ -6,6 +6,7 @@
 package btree;
 import global.*;
 
+
 /** KeyDataEntry: define (key, data) pair.
  */
 public class KeyDataEntry {
@@ -53,6 +54,20 @@ public class KeyDataEntry {
 
   /** Class constructor.
    */
+  public KeyDataEntry( Integer key, LID lid) {
+     this.key = new IntegerKey(key); 
+     this.data = new LabelHeapLeafData(lid);
+   }; 
+
+   /** Class constructor.
+   */
+  public KeyDataEntry( Integer key, QID qid) {
+     this.key = new IntegerKey(key); 
+     this.data = new QuadrupleLeafData(qid);
+   };
+
+  /** Class constructor.
+   */
   public KeyDataEntry( KeyClass key, RID rid){
      data = new LeafData(rid); 
      if ( key instanceof IntegerKey ) 
@@ -60,6 +75,26 @@ public class KeyDataEntry {
      else if ( key instanceof StringKey ) 
         this.key= new StringKey(((StringKey)key).getKey());    
   };
+
+  /** Class constructor.
+   */
+  public KeyDataEntry( KeyClass key, LID lid){
+   data = new LabelHeapLeafData(lid); 
+   if ( key instanceof IntegerKey ) 
+      this.key= new IntegerKey(((IntegerKey)key).getKey());
+   else if ( key instanceof StringKey ) 
+      this.key= new StringKey(((StringKey)key).getKey());    
+   };
+
+    /** Class constructor.
+     */
+   public KeyDataEntry( KeyClass key, QID qid){
+      data = new QuadrupleLeafData(qid);
+      if ( key instanceof IntegerKey )
+         this.key= new IntegerKey(((IntegerKey)key).getKey());
+      else if ( key instanceof StringKey )
+         this.key= new StringKey(((StringKey)key).getKey());
+   };
 
 
   /** Class constructor.
@@ -71,6 +106,20 @@ public class KeyDataEntry {
 
   /** Class constructor.
    */
+  public KeyDataEntry( String key, LID lid) {
+   this.key = new StringKey(key); 
+   this.data = new LabelHeapLeafData(lid);
+   }; 
+
+   /** Class constructor.
+   */
+  public KeyDataEntry( String key, QID qid) {
+   this.key = new StringKey(key); 
+   this.data = new QuadrupleLeafData(qid);
+}; 
+
+  /** Class constructor.
+   */
   public KeyDataEntry( KeyClass key,  DataClass data) {
      if ( key instanceof IntegerKey ) 
         this.key= new IntegerKey(((IntegerKey)key).getKey());
@@ -79,6 +128,10 @@ public class KeyDataEntry {
 
      if ( data instanceof IndexData ) 
         this.data= new IndexData(((IndexData)data).getData());
+     else if ( data instanceof LabelHeapLeafData ) 
+        this.data= new LabelHeapLeafData(((LabelHeapLeafData)data).getData()); 
+     else if ( data instanceof QuadrupleLeafData ) 
+        this.data= new QuadrupleLeafData(((QuadrupleLeafData)data).getData()); 
      else if ( data instanceof LeafData ) 
         this.data= new LeafData(((LeafData)data).getData()); 
   }
@@ -100,12 +153,17 @@ public class KeyDataEntry {
       if( data instanceof IndexData )
          st2= ( (IndexData)data).getData().pid==
               ((IndexData)entry.data).getData().pid ;
-      else
-         st2= ((RID)((LeafData)data).getData()).equals
-                (((RID)((LeafData)entry.data).getData()));
-
-  
+      else{
+         if( data instanceof LabelHeapLeafData )
+            st2= ((LID)((LabelHeapLeafData)data).getData()).equals
+                     (((LID)((LabelHeapLeafData)entry.data).getData()));
+         else if( data instanceof QuadrupleLeafData )
+            st2= ((QID)((QuadrupleLeafData)data).getData()).equals
+                     (((QID)((QuadrupleLeafData)entry.data).getData()));
+         else
+            st2= ((RID)((LeafData)data).getData()).equals
+                     (((RID)((LeafData)entry.data).getData()));
+      }
       return (st1&&st2);
   }     
 }
-

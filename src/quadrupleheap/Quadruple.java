@@ -102,7 +102,7 @@ public class Quadruple implements GlobalConst{
     return predicatelid.returnPID();
   }
 
-  public EID getOubjecqid() throws IOException
+  public EID getObjecqid() throws IOException
   {
     int slotno = Convert.getIntValue(fldOffset[2], data);
     int pageno = Convert.getIntValue(fldOffset[2]+4,data);
