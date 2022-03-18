@@ -573,7 +573,7 @@ public class LabelHeapfile implements Filetype,  GlobalConst {
 		return answer;
 	}
 
-	public String getLabel(LID lid) throws Exception {
+	public Label getLabel(LID lid) throws Exception {
 
 		boolean status;
 		HFPage dirPage = new HFPage();
@@ -596,7 +596,8 @@ public class LabelHeapfile implements Filetype,  GlobalConst {
 		unpinPage(currentDirPageId,false /*undirty*/);
 
 
-		return  aLabel.getLabel();
+		// return  aLabel.getLabel();
+		return aLabel;
 	}
 
 	public LID insertLabel(String label)
