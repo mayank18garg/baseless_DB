@@ -2,7 +2,6 @@
 
 package diskmgr;
 
-import java.io.*;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
@@ -42,7 +41,7 @@ public class rdfDB extends DB implements GlobalConst {
 	//(4) BTree Index file on predicate and confidence
 	//(5) BTree Index file on subject
 
-  public QuadrupleHeapfile getTrpHandle() {
+  public QuadrupleHeapfile getQuadrupleHandle() {
 		// TODO Auto-generated method stub
 		return Quadruple_HF;
 	}
@@ -77,7 +76,7 @@ public class rdfDB extends DB implements GlobalConst {
   /**
 	 * Default Constructor
 	 */
-	public rdfDB() { }
+	public rdfDB(int index) { }
 
 	/**
 	* Close RdfDB
@@ -117,7 +116,7 @@ public class rdfDB extends DB implements GlobalConst {
 				Quadruple_BTreeIndex.close();
 				//Triple_BTreeIndex.destroyFile();
 			}
-			if(TEMP_Quadruple_HF != null && TEMP_Quadruple_HF != getTrpHandle())
+			if(TEMP_Quadruple_HF != null && TEMP_Quadruple_HF != getQuadrupleHandle())
 			{
 				TEMP_Quadruple_HF.deleteFile();
 				//Triple_BTreeIndex.destroyFile();

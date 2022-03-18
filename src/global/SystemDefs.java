@@ -6,7 +6,7 @@ import catalog.*;
 
 public class SystemDefs {
   public static BufMgr	JavabaseBM;
-  public static DB	JavabaseDB;
+  public static rdfDB	JavabaseDB;
   public static Catalog	JavabaseCatalog;
   
   public static String  JavabaseDBName;
