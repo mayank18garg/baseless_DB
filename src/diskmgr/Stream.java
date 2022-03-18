@@ -28,8 +28,7 @@ public class Stream{
     public static EID entityObjectID = new EID();
     public static PID predicateID = new PID();
 
-    //Implement sortOrder function after the iterator is done
-
+    //Retrieve next quadruple in the stream
     public Quadruple getNext( QID qid ){
         try{
             Quadruple quadruple = null;
@@ -82,6 +81,7 @@ public class Stream{
         return null;
     }
 
+    //Close the stream
     public void closeStream(){
         try{
             if(iterator != null)
@@ -97,10 +97,12 @@ public class Stream{
         }
     }
 
+    //Constructor to create a stream object
     public Stream(String rdfDBName, int orderType, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter){
         sortOption = orderType;
         dbName = rdfDBName;
 
+        //check if any filters are null
         if(subjectFilter.compareToIgnoreCase("null") == 0){
             subjectNull = true;
         }
@@ -147,6 +149,8 @@ public class Stream{
                 scan_entire_heapfile = true;
                 scanEntireHeapFile(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             }
+
+            //Sort the results
             iterator = new TScan(Result_HF);
             if(sortOption != 0){
                 try{
@@ -165,7 +169,7 @@ public class Stream{
             entitySubjectID = getEID(subjectFilter).returnEID();
         }
         else{
-			System.out.println("No triple found");
+			System.out.println("No quadruple found");
 			return false;
 		}
 
@@ -173,7 +177,7 @@ public class Stream{
             predicateID = getPredicateID(predicateFilter).returnPID();
         }
         else{
-			System.out.println("No triple found");
+			System.out.println("No quadruple found");
 			return false;
 		}
 
@@ -181,10 +185,11 @@ public class Stream{
             entityObjectID = getEID(objectFilter).returnEID();
         }
         else{
-			System.out.println("No triple found");
+			System.out.println("No quadruple found");
 			return false;
 		}
 
+        //Compute the key to search the quadruple in the Quadruple BTree
         String key = entitySubjectID.slotNo + ":" + entitySubjectID.pageNo.pid + ":" + predicateID.slotNo + ":" + predicateID.pageNo.pid + ":" 
                         + entityObjectID.slotNo + ":" + entityObjectID.pageNo.pid;
         KeyClass low_key = new StringKey(key);
@@ -213,6 +218,11 @@ public class Stream{
         return true;
     }
 
+    /**
+     * Returns labelID for the given entity
+     * @param entityFilter
+     * @return
+     */
     public static LID getEID(String entityFilter){
         LID eid = null;
         try{
@@ -237,6 +247,11 @@ public class Stream{
         return eid;
     }
 
+    /**
+     * Returns predicateID for the given predicate
+     * @param predicateFilter
+     * @return
+     */
     public static LID getPredicateID(String predicateFilter){
         LID predicateID = null;
         try{
@@ -262,6 +277,7 @@ public class Stream{
 		}
         return predicateID;
     }
+
 
     private void scanBTConfidenceIndex(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter){
 
