@@ -543,7 +543,7 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 
 	} // end of _newDatapage
 
-	boolean deleteQuadruple(QID qid) throws Exception {
+	public boolean deleteQuadruple(QID qid) throws Exception {
 		boolean status;
 		HFPage currentDirPage = new HFPage();
 		PageId currentDirPageId = new PageId();
@@ -864,7 +864,7 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 		return  aquadruple;  //(true?)OK, but the caller need check if atuple==NULL
 	}
 
-	boolean updateQuadruple(QID qid, Quadruple newQuadruple) throws Exception {
+	public boolean updateQuadruple(QID qid, Quadruple newQuadruple) throws Exception {
 
 		boolean status;
 		HFPage dirPage = new HFPage();

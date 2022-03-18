@@ -284,7 +284,7 @@ public class LabelHeapfile implements Filetype,  GlobalConst {
 
 	} // end of delete_file_entry
 
-	boolean deleteLabel(LID lid) throws Exception{
+	public boolean deleteLabel(LID lid) throws Exception{
 
 		boolean status;
 		HFPage currentDirPage = new HFPage();
@@ -529,7 +529,7 @@ public class LabelHeapfile implements Filetype,  GlobalConst {
 		return false;
 	} // end of _findDatapage
 
-	public int getQuadrupleCnt()
+	public int getLabelCnt()
 			throws HFBufMgrException, IOException, InvalidSlotNumberException, InvalidTupleSizeException {
 		int answer = 0;
 		PageId currentDirPageId = new PageId(_firstDirPageId.pid);
@@ -599,7 +599,7 @@ public class LabelHeapfile implements Filetype,  GlobalConst {
 		return  aLabel.getLabel();
 	}
 
-	LID insertLabel(String label)
+	public LID insertLabel(String label)
 			throws InvalidSlotNumberException,
 			InvalidTupleSizeException,
 			SpaceNotAvailableException,
