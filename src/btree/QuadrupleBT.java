@@ -474,4 +474,3 @@ public class QuadrupleBT implements GlobalConst{
 
 
 
-

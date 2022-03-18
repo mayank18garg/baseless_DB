@@ -2,1214 +2,397 @@
 
 package diskmgr;
 
-import btree.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.TreeSet;
+
+import bufmgr.*;
 import global.*;
-import quadrupleheap.Quadruple;
-import quadrupleheap.QuadrupleHeapfile;
+import labelheap.*;
+import quadrupleheap.*;
+import btree.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+public class rdfDB extends DB implements GlobalConst {
+  private QuadrupleHeapfile TEMP_Quadruple_HF;		//TEMPORARY HEAP FILE FOR SORTING
+    
+	private QuadrupleHeapfile Quadruple_HF; 	  		//Quadruples Heap file to store triples
+	private LabelHeapfile Entity_HF; 	  		//Entity Heap file to store subjects/objects
+	private LabelHeapfile Predicate_HF;   		//Predicates Heap file to store predicates
 
-public class rdfDB implements GlobalConst {
+	private LabelHeapBTreeFile Entity_BTree;  		//BTree Index file on Entity Heap file
+	private LabelHeapBTreeFile Predicate_BTree; 	//BTree Predicate file on Predicate Heap file
+	private QuadrupleBTreeFile Quadruple_BTree; 		//BTree Predicate file on Predicate Heap file
 
+	private String curr_dbname; 				//RDF Database name
 
-  private static final int bits_per_page = MAX_SPACE * 8;
-    private QuadrupleHeapfile TQuadrupleHF;		//TEMPORARY HEAP FILE FOR SORTING
+	private int Total_Subjects = 0; 			//Total count of subjects in RDF
+	private int Total_Objects = 0; 				//Total count of objects in RDF
+	private int Total_Predicates = 0; 			//Total count of predicates in RDF
+	private int Total_Quadruples = 0; 				//Total count of triples in RDF
+	private int Total_Entities = 0;         	//Total count of entities in RDF
 
-    private QuadrupleHeapfile QuadrupleHF; 	  		//Triples Heap file to store triples
-    private LabelHeapfile Entity_HF; 	  		//Entity Heap file to store subjects/objects
-    private LabelHeapfile Predicate_HF;   		//Predicates Heap file to store predicates
+  private QuadrupleBTreeFile Quadruple_BTreeIndex; 	//BTree file for the index options given
+	// INDEX OPTIONS	
+	//(1) BTree Index file on confidence
+	//(2) BTree Index file on subject and confidence
+	//(3) BTree Index file on object and confidence
+	//(4) BTree Index file on predicate and confidence
+	//(5) BTree Index file on subject
 
-    private LabelBTreeFile Entity_BTree;  		//BTree Index file on Entity Heap file
-    private LabelBTreeFile Predicate_BTree; 	//BTree Predicate file on Predicate Heap file
-    private QuadrupleBTreeFile QuadrupleBTree; 		//BTree Predicate file on Predicate Heap file
-
-    private String usedbname; 				//RDF Database name
-
-    private LabelBTreeFile dup_tree;        	//BTree file for duplicate subjects
-    private LabelBTreeFile dup_Objtree;     	//BTree file for duplicate objects
-
-    private int Total_Subjects = 0; 			//Total count of subjects in RDF
-    private int Total_Objects = 0; 				//Total count of objects in RDF
-    private int Total_Predicates = 0; 			//Total count of predicates in RDF
-    private int Total_Quadruples = 0; 				//Total count of triples in RDF
-    private int Total_Entities = 0;         	//Total count of entities in RDF
-
-
-    private QuadrupleBTreeFile QuadrupleBTreeIndex; 	//BTree file for the index options given
-    // INDEX OPTIONS
-    //(1) BTree Index file on confidence
-    //(2) BTree Index file on subject and confidence
-    //(3) BTree Index file on object and confidence
-    //(4) BTree Index file on predicate and confidence
-    //(5) BTree Index file on subject
-
-  /** Open the database with the given name.
-   *
-   * @param name DB_name
-   *
-   * @exception IOException I/O errors
-   * @exception FileIOException file I/O error
-   * @exception InvalidPageNumberException invalid page number
-   * @exception DiskMgrException error caused by other layers
-   */
-  public void openDB( String fname)
-    throws IOException,
-	   InvalidPageNumberException,
-	   FileIOException,
-	   DiskMgrException {
-
-    name = fname;
-
-    // Creaat a random access file
-    fp = new RandomAccessFile(fname, "rw");
-
-    PageId pageId = new PageId();
-    Page apage = new Page();
-    pageId.pid = 0;
-
-    num_pages = 1;	//temporary num_page value for pinpage to work
-
-    pinPage(pageId, apage, false /*read disk*/);
-
-
-    DBFirstPage firstpg = new DBFirstPage();
-    firstpg.openPage(apage);
-    num_pages = firstpg.getNumDBPages();
-
-    unpinPage(pageId, false /* undirty*/);
-  }
-
-  /** default constructor.
-   */
-  public rdfDB() { }
-  
-  
-  /** DB Constructors.
-   * Create a database with the specified number of pages where the page
-   * size is the default page size.
-   *
-   * @param name DB name
-   * @param num_pages number of pages in DB
-   *
-   * @exception IOException I/O errors
-   * @exception InvalidPageNumberException invalid page number
-   * @exception FileIOException file I/O error
-   * @exception DiskMgrException error caused by other layers
-   */
-  public void openDB( String fname, int num_pgs)
-    throws IOException, 
-	   InvalidPageNumberException,
-	   FileIOException,
-	   DiskMgrException {
-    
-    name = new String(fname);
-    num_pages = (num_pgs > 2) ? num_pgs : 2;
-    
-    File DBfile = new File(name);
-    
-    DBfile.delete();
-    
-    // Creaat a random access file
-    fp = new RandomAccessFile(fname, "rw");
-    
-    // Make the file num_pages pages long, filled with zeroes.
-    fp.seek((long)(num_pages*MINIBASE_PAGESIZE-1));
-    fp.writeByte(0);
-    
-    // Initialize space map and directory pages.
-    
-    // Initialize the first DB page
-    Page apage = new Page();
-    PageId pageId = new PageId();
-    pageId.pid = 0;
-    pinPage(pageId, apage, true /*no diskIO*/);
-    
-    DBFirstPage firstpg = new DBFirstPage(apage);
-    
-    firstpg.setNumDBPages(num_pages);
-    unpinPage(pageId, true /*dirty*/);
-    
-    // Calculate how many pages are needed for the space map.  Reserve pages
-    // 0 and 1 and as many additional pages for the space map as are needed.
-    int num_map_pages = (num_pages + bits_per_page -1)/bits_per_page;
-    
-    set_bits(pageId, 1+num_map_pages, 1);
-    
-  }
-  
-  /** Close DB file.
-   * @exception IOException I/O errors.
-   */
-  public void closeDB() throws IOException {
-    fp.close();
-  }
-  
-  
-  /** Destroy the database, removing the file that stores it. 
-   * @exception IOException I/O errors.
-   */
-  public void DBDestroy() 
-    throws IOException {
-    
-    fp.close();
-    File DBfile = new File(name);
-    DBfile.delete();
-  }
-  
-  /** Read the contents of the specified page into a Page object
-   *
-   * @param pageno pageId which will be read
-   * @param apage page object which holds the contents of page
-   *
-   * @exception InvalidPageNumberException invalid page number
-   * @exception FileIOException file I/O error
-   * @exception IOException I/O errors
-   */
-  public  void read_page(PageId pageno, Page apage)
-    throws InvalidPageNumberException, 
-	   FileIOException, 
-	   IOException {
-
-    if((pageno.pid < 0)||(pageno.pid >= num_pages))
-      throw new InvalidPageNumberException(null, "BAD_PAGE_NUMBER");
-    
-    // Seek to the correct page
-    fp.seek((long)(pageno.pid *MINIBASE_PAGESIZE));
-    
-    // Read the appropriate number of bytes.
-    byte [] buffer = apage.getpage();  //new byte[MINIBASE_PAGESIZE];
-    try{
-      fp.read(buffer);
-    }
-    catch (IOException e) {
-      throw new FileIOException(e, "DB file I/O error");
-    }
-    
-  }
-  
-  /** Write the contents in a page object to the specified page.
-   *
-   * @param pageno pageId will be wrote to disk
-   * @param apage the page object will be wrote to disk
-   *
-   * @exception InvalidPageNumberException invalid page number
-   * @exception FileIOException file I/O error
-   * @exception IOException I/O errors
-   */
-  public void write_page(PageId pageno, Page apage)
-    throws InvalidPageNumberException, 
-	   FileIOException, 
-	   IOException {
-
-    if((pageno.pid < 0)||(pageno.pid >= num_pages))
-      throw new InvalidPageNumberException(null, "INVALID_PAGE_NUMBER");
-    
-    // Seek to the correct page
-    fp.seek((long)(pageno.pid *MINIBASE_PAGESIZE));
-    
-    // Write the appropriate number of bytes.
-    try{
-      fp.write(apage.getpage());
-    }
-    catch (IOException e) {
-      throw new FileIOException(e, "DB file I/O error");
-    }
-    
-  }
-  
-  /** Allocate a set of pages where the run size is taken to be 1 by default.
-   *  Gives back the page number of the first page of the allocated run.
-   *  with default run_size =1
-   *
-   * @param start_page_num page number to start with 
-   *
-   * @exception OutOfSpaceException database is full
-   * @exception InvalidRunSizeException invalid run size 
-   * @exception InvalidPageNumberException invalid page number
-   * @exception FileIOException DB file I/O errors
-   * @exception IOException I/O errors
-   * @exception DiskMgrException error caused by other layers
-   */
-  public void allocate_page(PageId start_page_num)
-    throws OutOfSpaceException, 
-	   InvalidRunSizeException, 
-	   InvalidPageNumberException, 
-	   FileIOException, 
-	   DiskMgrException,
-           IOException {
-    allocate_page(start_page_num, 1);
-  }
-  
-  /** user specified run_size
-   *
-   * @param start_page_num the starting page id of the run of pages
-   * @param run_size the number of page need allocated
-   *
-   * @exception OutOfSpaceException No space left
-   * @exception InvalidRunSizeException invalid run size 
-   * @exception InvalidPageNumberException invalid page number
-   * @exception FileIOException file I/O error
-   * @exception IOException I/O errors
-   * @exception DiskMgrException error caused by other layers
-   */
-  public void allocate_page(PageId start_page_num, int runsize)
-    throws OutOfSpaceException, 
-	   InvalidRunSizeException, 
-	   InvalidPageNumberException, 
-	   FileIOException, 
-	   DiskMgrException,
-           IOException {
-
-    if(runsize < 0) throw new InvalidRunSizeException(null, "Negative run_size");
-    
-    int run_size = runsize;
-    int num_map_pages = (num_pages + bits_per_page -1)/bits_per_page;
-    int current_run_start = 0; 
-    int current_run_length = 0;
-    
-    
-    // This loop goes over each page in the space map.
-    PageId pgid = new PageId();
-    byte [] pagebuf;
-    int byteptr;
-    
-    for(int i=0; i< num_map_pages; ++i) {// start forloop01
-	
-      pgid.pid = 1 + i;
-      // Pin the space-map page.
-      
-      Page apage = new Page();
-      pinPage(pgid, apage, false /*read disk*/);
-      
-      pagebuf = apage.getpage();
-      byteptr = 0;
-      
-      // get the num of bits on current page
-      int num_bits_this_page = num_pages - i*bits_per_page;
-      if(num_bits_this_page > bits_per_page)
-	num_bits_this_page = bits_per_page;
-      
-      // Walk the page looking for a sequence of 0 bits of the appropriate
-      // length.  The outer loop steps through the page's bytes, the inner
-      // one steps through each byte's bits.
-      
-      for(; num_bits_this_page>0 
-	    && current_run_length < run_size; ++byteptr) {// start forloop02
-	  
-	
-	Integer intmask = new Integer(1);
-	Byte mask = new Byte(intmask.byteValue());
-	byte tmpmask = mask.byteValue();
-	
-	while (mask.intValue()!=0 && (num_bits_this_page>0)
-	       &&(current_run_length < run_size))
-	  
-	  {	      
-	    if( (pagebuf[byteptr] & tmpmask ) != 0)
-	      {
-		current_run_start += current_run_length + 1;
-		current_run_length = 0;
-	      }
-	    else ++current_run_length;
-	    
-	    
-	    tmpmask <<=1;
-	    mask = new Byte(tmpmask);
-	    --num_bits_this_page;
-	  }
-	
-	
-      }//end of forloop02
-      // Unpin the space-map page.
-      
-      unpinPage(pgid, false /*undirty*/);
-      
-    }// end of forloop01
-    
-    if(current_run_length >= run_size)
-      {
-	start_page_num.pid = current_run_start;
-	set_bits(start_page_num, run_size, 1);
-	
-	return;
-      }
-    
-    throw new OutOfSpaceException(null, "No space left");
-  }
-  
-  /** Deallocate a set of pages starting at the specified page number and
-   * a run size can be specified.
-   *
-   * @param start_page_num the start pageId to be deallocate
-   * @param run_size the number of pages to be deallocated
-   * 
-   * @exception InvalidRunSizeException invalid run size 
-   * @exception InvalidPageNumberException invalid page number
-   * @exception FileIOException file I/O error
-   * @exception IOException I/O errors
-   * @exception DiskMgrException error caused by other layers
-   */
-  public void deallocate_page(PageId start_page_num, int run_size)
-    throws InvalidRunSizeException, 
-	   InvalidPageNumberException, 
-	   IOException, 
-	   FileIOException,
-	   DiskMgrException {
-
-    if(run_size < 0) throw new InvalidRunSizeException(null, "Negative run_size");
-    
-    set_bits(start_page_num, run_size, 0);
-  }
-  
-  /** Deallocate a set of pages starting at the specified page number
-   *  with run size = 1
-   *
-   * @param start_page_num the start pageId to be deallocate
-   * @param run_size the number of pages to be deallocated
-   *
-   * @exception InvalidRunSizeException invalid run size 
-   * @exception InvalidPageNumberException invalid page number
-   * @exception FileIOException file I/O error
-   * @exception IOException I/O errors
-   * @exception DiskMgrException error caused by other layers
-   * 
-   */
-  public void deallocate_page(PageId start_page_num)
-    throws InvalidRunSizeException, 
-	   InvalidPageNumberException, 
-	   IOException, 
-	   FileIOException,
-	   DiskMgrException {
-
-    set_bits(start_page_num, 1, 0);
-  }
-  
-  /** Adds a file entry to the header page(s).
-   *
-   * @param fname file entry name
-   * @param start_page_num the start page number of the file entry
-   *
-   * @exception FileNameTooLongException invalid file name (too long)
-   * @exception InvalidPageNumberException invalid page number
-   * @exception InvalidRunSizeException invalid DB run size
-   * @exception DuplicateEntryException entry for DB is not unique
-   * @exception OutOfSpaceException database is full
-   * @exception FileIOException file I/O error
-   * @exception IOException I/O errors
-   * @exception DiskMgrException error caused by other layers
-   */
-  public void add_file_entry(String fname, PageId start_page_num)
-    throws FileNameTooLongException, 
-	   InvalidPageNumberException, 
-	   InvalidRunSizeException,
-	   DuplicateEntryException,
-	   OutOfSpaceException,
-	   FileIOException, 
-	   IOException, 
-	   DiskMgrException {
-    
-    if(fname.length() >= MAX_NAME)
-      throw new FileNameTooLongException(null, "DB filename too long");
-    if((start_page_num.pid < 0)||(start_page_num.pid >= num_pages))
-      throw new InvalidPageNumberException(null, " DB bad page number");
-    
-    // Does the file already exist?  
-    
-    if( get_file_entry(fname) != null) 
-      throw new DuplicateEntryException(null, "DB fileentry already exists");
-    
-    Page apage = new Page();
-    
-    boolean found = false;
-    int free_slot = 0;
-    PageId hpid = new PageId();
-    PageId nexthpid = new PageId(0);
-    DBHeaderPage dp;
-    do
-      {// Start DO01
-	//  System.out.println("start do01");
-        hpid.pid = nexthpid.pid;
-	
-	// Pin the header page
-	pinPage(hpid, apage, false /*read disk*/);
-        
-	// This complication is because the first page has a different
-        // structure from that of subsequent pages.
-	if(hpid.pid==0)
-	  {
-	    dp = new DBFirstPage();
-	    ((DBFirstPage) dp).openPage(apage);
-	  }
-	else
-	  {
-	    dp = new DBDirectoryPage();
-	    ((DBDirectoryPage) dp).openPage(apage);
-	  }
-	
-	nexthpid = dp.getNextPage();
-	int entry = 0;
-	
-	PageId tmppid = new PageId();
-	while(entry < dp.getNumOfEntries())
-	  {
-	    dp.getFileEntry(tmppid, entry);
-	    if(tmppid.pid == INVALID_PAGE)  break;
-	    entry ++;
-	  }
-	
-	if(entry < dp.getNumOfEntries())
-	  {
-	    free_slot = entry;
-	    found = true;
-	  }
-	else if (nexthpid.pid != INVALID_PAGE)
-	  {
-	    // We only unpin if we're going to continue looping.
-	    unpinPage(hpid, false /* undirty*/);
-	  }
-	
-      }while((nexthpid.pid != INVALID_PAGE)&&(!found)); // End of DO01
-    
-    // Have to add a new header page if possible.
-    if(!found)
-      {
-	try{
-	  allocate_page(nexthpid);
+  public QuadrupleHeapfile getQuadrupleHandle() {
+		// TODO Auto-generated method stub
+		return Quadruple_HF;
 	}
-	catch(Exception e){         //need rethrow an exception!!!!
-          unpinPage(hpid, false /* undirty*/);
-	  e.printStackTrace();
+
+	public LabelHeapfile getEntityHandle() {
+		// TODO Auto-generated method stub
+		return Entity_HF;
+	}
+	public LabelHeapfile getPredicateHandle() {
+		// TODO Auto-generated method stub
+		return Predicate_HF;
 	}
 	
-	// Set the next-page pointer on the previous directory page.
-	dp.setNextPage(nexthpid);
-	unpinPage(hpid, true /* dirty*/);
-	
-	// Pin the newly-allocated directory page.
-	hpid.pid = nexthpid.pid;
-	
-	pinPage(hpid, apage, true/*no diskIO*/);
-	dp = new DBDirectoryPage(apage);
-	
-	free_slot = 0;
-      }
-    
-    // At this point, "hpid" has the page id of the header page with the free
-    // slot; "pg" points to the pinned page; "dp" has the directory_page
-    // pointer; "free_slot" is the entry number in the directory where we're
-    // going to put the new file entry.
-    
-    dp.setFileEntry(start_page_num, fname, free_slot);
-    
-    unpinPage(hpid, true /* dirty*/);
-    
-  }
-  
-  /** Delete the entry corresponding to a file from the header page(s).
-   *
-   * @param fname file entry name
-   *
-   * @exception FileEntryNotFoundException file does not exist
-   * @exception FileIOException file I/O error
-   * @exception IOException I/O errors
-   * @exception InvalidPageNumberException invalid page number
-   * @exception DiskMgrException error caused by other layers
-   */
-  public void delete_file_entry(String fname)
-    throws FileEntryNotFoundException, 
-	   IOException,
-	   FileIOException,
-	   InvalidPageNumberException, 
-	   DiskMgrException {
-    
-    Page apage = new Page();
-    boolean found = false;
-    int slot = 0;
-    PageId hpid = new PageId();
-    PageId nexthpid = new PageId(0);
-    PageId tmppid = new PageId();
-    DBHeaderPage dp;
-    
-    do
-      { // startDO01
-        hpid.pid = nexthpid.pid;
-	
-	// Pin the header page.
-	pinPage(hpid, apage, false/*read disk*/);
+	public QuadrupleHeapfile getTEMP_Quadruple_HF() {
+		return TEMP_Quadruple_HF;
+	}
 
-	// This complication is because the first page has a different
-        // structure from that of subsequent pages.
-	if(hpid.pid==0)
-	  {
-	    dp = new DBFirstPage();
-	    ((DBFirstPage)dp).openPage(apage);
-	  }
-	else
-	  {
-	    dp = new DBDirectoryPage();
-	    ((DBDirectoryPage) dp).openPage(apage);
-	  }
-	nexthpid = dp.getNextPage();
-	
-	int entry = 0;
-	
-	String tmpname;
-	while(entry < dp.getNumOfEntries())
-	  {
-	    tmpname = dp.getFileEntry(tmppid, entry);
-	    
-	    if((tmppid.pid != INVALID_PAGE)&&
-	       (tmpname.compareTo(fname) == 0)) break; 
-	    entry ++;
-	  }
-	
-        if(entry < dp.getNumOfEntries())
-	  {
-	    slot = entry;
-	    found = true;
-	  }
-	else
-	  {
-	    unpinPage(hpid, false /*undirty*/);
-	  }
-	
-      } while((nexthpid.pid != INVALID_PAGE) && (!found)); // EndDO01
-    
-    if(!found)  // Entry not found - nothing deleted
-      throw new FileEntryNotFoundException(null, "DB file not found");
-    
-    // Have to delete record at hpnum:slot
-    tmppid.pid = INVALID_PAGE;
-    dp.setFileEntry(tmppid, "\0", slot);
-    
-    unpinPage(hpid, true /*dirty*/);
-    
-  }
-  
-  /** Get the entry corresponding to the given file.
-   *
-   * @param name file entry name
-   *
-   * @exception IOException I/O errors
-   * @exception FileIOException file I/O error
-   * @exception InvalidPageNumberException invalid page number
-   * @exception DiskMgrException error caused by other layers
-   */
-  public PageId get_file_entry(String name)
-    throws IOException,
-	   FileIOException,
-	   InvalidPageNumberException, 
-	   DiskMgrException {
+	public QuadrupleBTreeFile getQuadruple_BTreeIndex() 
+	throws GetFileEntryException, PinPageException, ConstructPageException 
+	{
+		Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex");
+		return Quadruple_BTreeIndex;
+	}
 
-    Page apage = new Page();
-    boolean found = false;
-    int slot = 0;
-    PageId hpid = new PageId();
-    PageId nexthpid = new PageId(0);
-    DBHeaderPage dp;
-    
-    do
-      {// Start DO01
-	
-	// System.out.println("get_file_entry do-loop01: "+name);
-        hpid.pid = nexthpid.pid;
-	
-        // Pin the header page.
-        pinPage(hpid, apage, false /*no diskIO*/);
-	
-	// This complication is because the first page has a different
-        // structure from that of subsequent pages.
-	if(hpid.pid==0)
-	  {
-	    dp = new DBFirstPage();
-	    ((DBFirstPage) dp).openPage(apage);
-	  }
-	else
-	  {
-	    dp = new DBDirectoryPage();
-	    ((DBDirectoryPage) dp).openPage(apage);
-	  }
-	nexthpid = dp.getNextPage();
-	
-	int entry = 0;
-	PageId tmppid = new PageId();
-	String tmpname;
-	
-	while(entry < dp.getNumOfEntries())
-	  {
-	    tmpname = dp.getFileEntry(tmppid, entry);
-	    
-	    if((tmppid.pid != INVALID_PAGE)&&
-	       (tmpname.compareTo(name) == 0)) break; 
-	    entry ++;
-	  }
-	if(entry < dp.getNumOfEntries())
-	  {
-	    slot =  entry;
-	    found = true;
-	  }
-	
-	unpinPage(hpid, false /*undirty*/);
-	
-      }while((nexthpid.pid!=INVALID_PAGE)&&(!found));// End of DO01
-    
-    if(!found)  // Entry not found - don't post error, just fail.
-      {    
-	//  System.out.println("entry NOT found");
-	return null;
-      }
-    
-    PageId startpid = new PageId();
-    dp.getFileEntry(startpid, slot);
-    return startpid;
-  }
-  
-  /** Functions to return some characteristics of the database.
-   */
-  public String db_name(){return name;}
-  public int db_num_pages(){return num_pages;}
-  public int db_page_size(){return MINIBASE_PAGESIZE;}
-  
-  /** Print out the space map of the database.
-   * The space map is a bitmap showing which
-   * pages of the db are currently allocated.
-   *
-   * @exception FileIOException file I/O error
-   * @exception IOException I/O errors
-   * @exception InvalidPageNumberException invalid page number
-   * @exception DiskMgrException error caused by other layers
-   */
-  public void dump_space_map()
-    throws DiskMgrException,
-	   IOException,
-	   FileIOException, 
-	   InvalidPageNumberException 
-	   
-    {
-      
-      System.out.println ("********  IN DUMP");
-      int num_map_pages = (num_pages + bits_per_page -1)/bits_per_page;
-      int bit_number = 0;
-      
-      // This loop goes over each page in the space map.
-      PageId pgid = new PageId();
-      System.out.println ("num_map_pages = " + num_map_pages);
-      System.out.println ("num_pages = " + num_pages);
-      for(int i=0; i< num_map_pages; i++)
-	{//start forloop01
-	  
-	  pgid.pid = 1 + i;   //space map starts at page1
-	  // Pin the space-map page.
-	  Page apage = new Page();
-	  pinPage(pgid, apage, false/*read disk*/);
-	  
-	  // How many bits should we examine on this page?
-	  int num_bits_this_page = num_pages - i*bits_per_page;
-	  System.out.println ("num_bits_this_page = " + num_bits_this_page);
-	  System.out.println ("num_pages = " + num_pages);
-	  if ( num_bits_this_page > bits_per_page )
-	    num_bits_this_page = bits_per_page;
-	  
-	  // Walk the page looking for a sequence of 0 bits of the appropriate
-	  // length.  The outer loop steps through the page's bytes, the inner
-	  // one steps through each byte's bits.
-	  
-	  int pgptr = 0;
-	  byte [] pagebuf = apage.getpage();
-	  int mask;
-	  for ( ; num_bits_this_page > 0; pgptr ++)
-	    {// start forloop02
-	      
-	      for(mask=1;
-		  mask < 256 && num_bits_this_page > 0;
-		  mask=(mask<<1), --num_bits_this_page, ++bit_number )
-		{//start forloop03
-		  
-		  int bit = pagebuf[pgptr] & mask;
-		  if((bit_number%10) == 0)
-		    if((bit_number%50) == 0)
-		      {
-			if(bit_number>0) System.out.println("\n");
-			System.out.print("\t" + bit_number +": ");
-		      }
-		    else System.out.print(' ');
-		  
-		  if(bit != 0) System.out.print("1");
-		  else System.out.print("0");
-		  
-		}//end of forloop03
-	      
-	    }//end of forloop02
-	  
-	  unpinPage(pgid, false /*undirty*/);
-	  
-	}//end of forloop01
-      
-      System.out.println();
-      
-      
-    }
-  
-  private RandomAccessFile fp;
-  private int num_pages;
-  private String name;
-  
-  
-  /** Set runsize bits starting from start to value specified
-   */
-  private void set_bits( PageId start_page, int run_size, int bit )
-    throws InvalidPageNumberException, 
-	   FileIOException, 
-	   IOException, 
-	   DiskMgrException {
+  public QuadrupleBTreeFile getQuadruple_BTree() 
+	throws GetFileEntryException, PinPageException, ConstructPageException
+	{
+		Quadruple_BTree = new QuadrupleBTreeFile(curr_dbname+"/quadrupleBT");
+		return Quadruple_BTree;
+	}
 
-    if((start_page.pid<0) || (start_page.pid+run_size > num_pages))
-      throw new InvalidPageNumberException(null, "Bad page number");
-    
-    // Locate the run within the space map.
-    int first_map_page = start_page.pid/bits_per_page + 1;
-    int last_map_page = (start_page.pid+run_size-1)/bits_per_page +1;
-    int first_bit_no = start_page.pid % bits_per_page;
-    
-    // The outer loop goes over all space-map pages we need to touch.
-    
-    for(PageId pgid = new PageId(first_map_page);
-	pgid.pid <= last_map_page;
-	pgid.pid = pgid.pid+1, first_bit_no = 0)
-      {//Start forloop01
-	
-        // Pin the space-map page.
-	Page pg = new Page();
-	
-	
-	pinPage(pgid, pg, false/*no diskIO*/);
-	
-	
-	byte [] pgbuf = pg.getpage();
-	
-	// Locate the piece of the run that fits on this page.
-	int first_byte_no = first_bit_no/8;
-	int first_bit_offset = first_bit_no%8;
-	int last_bit_no = first_bit_no + run_size -1;
-	
-	if(last_bit_no >= bits_per_page )
-	  last_bit_no = bits_per_page - 1;
-	
-        int last_byte_no = last_bit_no / 8;
-        
-	// This loop actually flips the bits on the current page.
-	int cur_posi = first_byte_no;
-	for(;cur_posi <= last_byte_no; ++cur_posi, first_bit_offset=0)
-	  {//start forloop02
-	    
-	    int max_bits_this_byte = 8 - first_bit_offset;
-	    int num_bits_this_byte = (run_size > max_bits_this_byte?
-				      max_bits_this_byte : run_size);
-	    
-            int imask =1;
-	    int temp;
-	    imask = ((imask << num_bits_this_byte) -1)<<first_bit_offset;
-	    Integer intmask = new Integer(imask);
-	    Byte mask = new Byte(intmask.byteValue());
-	    byte bytemask = mask.byteValue();
-	    
-	    if(bit==1)
-	      {
-	        temp = (pgbuf[cur_posi] | bytemask);
-	        intmask = new Integer(temp);
-		pgbuf[cur_posi] = intmask.byteValue();
-	      }
-	    else
-	      {
+  /**
+	 * Default Constructor
+	 */
+	public rdfDB() { }
+
+	/**
+	* Close RdfDB
+	*/
+	public void rdfcloseDB() 
+	throws 	PageUnpinnedException, InvalidFrameNumberException, HashEntryNotFoundException, ReplacerException
+	{
+		try {
+
+			if(Entity_BTree != null)
+			{
+				Entity_BTree.close();
+				//Entity_BTree.destroyFile();
+			}
+			if(Predicate_BTree != null)
+			{
+				Predicate_BTree.close();
+				//Predicate_BTree.destroyFile();
+			}
+			if(Quadruple_BTree != null)
+			{
+				Quadruple_BTree.close();
+				//Triple_BTree.destroyFile();
+			}
+			if(Quadruple_BTreeIndex != null)
+			{
+				Quadruple_BTreeIndex.close();
+				//Triple_BTreeIndex.destroyFile();
+			}
+			if(TEMP_Quadruple_HF != null && TEMP_Quadruple_HF != getQuadrupleHandle())
+			{
+				TEMP_Quadruple_HF.deleteFile();
+				//Triple_BTreeIndex.destroyFile();
+			}
+		}catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+  
+  /**Constructor for the RDF database. 
+	 * @param type is an integer denoting the different clus-tering and indexing strategies you will use for the rdf database.   
+	 * @Note: Each RDF database contains:
+	 * one TripleHeapFile to store the triples,
+	 * one LabelHeapfile to store entity labels, 
+	 * and another LabelHeapfile to store subject labels. 
+	 * You can create as many btree index files as you want over these triple and label heap files
+	 */
+	public rdfDB(int type) 
+	{
+		int keytype = AttrType.attrString;
+
+		/** Initialize counter to zero **/ 
+		PCounter.initialize();
 		
-		temp = pgbuf[cur_posi] & (255^bytemask);
-	        intmask = new Integer(temp);
-		pgbuf[cur_posi] = intmask.byteValue();
-	      }
-	    run_size -= num_bits_this_byte;
-	    
-	  }//end of forloop02
-	
-	// Unpin the space-map page.
-	
-	unpinPage(pgid, true /*dirty*/);
-	
-      }//end of forloop01
-    
-  }
+		//Create TEMP TRIPLES heap file /TOFIX
+		try
+		{ 
+			//System.out.println("Creating new TEMP triples heapfile");
+			//TEMP_Triple_HF = new TripleHeapfile(Long.toString(System.currentTimeMillis()));
+			TEMP_Quadruple_HF = new QuadrupleHeapfile("tempresult");
+		}
+		catch(Exception e)
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+				
+		//Create TRIPLES heap file
+		try
+		{ 
+			//System.out.println("Creating new triples heapfile");
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+
+		}
+		catch(Exception e)
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+		//Create ENTITES heap file: (Entity:Subject/Object)
+		try
+		{
+			//System.out.println("Creating new entities heapfile");
+			Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+		}
+		catch(Exception e)
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+		//Create PREDICATES heap file: (Predicates)
+		try
+		{
+			//System.out.println("Creating new predicate heapfile");
+			Predicate_HF = new LabelHeapfile(curr_dbname+"/predicateHF");
+		}
+		catch(Exception e)
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+
+		//Create Entity Binary tree file
+		try
+		{
+			//System.out.println("Creating new entity Binary Tree file");
+			Entity_BTree = new LabelHeapBTreeFile(curr_dbname+"/entityBT",keytype,255,1);
+			Entity_BTree.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+		//Create Predicate Binary tree file
+		try
+		{
+			//System.out.println("Creating new Predicate Binary Tree file");
+			Predicate_BTree = new LabelHeapBTreeFile(curr_dbname+"/predicateBT",keytype,255,1);
+			Predicate_BTree.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+				
+		//Create Triple Binary tree file
+		try
+		{
+			//System.out.println("Creating new Triple Binary Tree file");
+			Quadruple_BTree = new QuadrupleBTreeFile(curr_dbname+"/quadrupleBT",keytype,255,1);
+			Quadruple_BTree.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+		// try
+		// {
+		// 	//System.out.println("Creating new Label Binary Tree file for checking duplicate subjects");
+		// 	dup_tree = new LabelHeapBTreeFile(curr_dbname+"/dupSubjBT",keytype,255,1);
+		// 	dup_tree.close();
+		// }
+		// catch(Exception e)
+		// {
+		// 	System.err.println (""+e);
+		// 	e.printStackTrace();
+		// 	Runtime.getRuntime().exit(1);
+		// }
+
+		// try
+		// {
+		// 	//System.out.println("Creating new Label Binary Tree file for checking duplicate objects");
+		// 	dup_Objtree = new LabelHeapBTreeFile(curr_dbname+"/dupObjBT",keytype,255,1);
+		// 	dup_Objtree.close();
+		// }
+		// catch(Exception e)
+		// {
+		// 	System.err.println (""+e);
+		// 	e.printStackTrace();
+		// 	Runtime.getRuntime().exit(1);
+		// }
+
+		//Now create btree index files as per the index option
+		try
+		{
+			//System.out.println("Creating Triple Binary Tree file for given index option");
+			// Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			// Quadruple_BTreeIndex.close();
+			createIndex(type);
+		}
+		catch(Exception e)
+		{
+			System.err.println ("Error creating B tree index for given index option"+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+	}
 
   /**
-   * short cut to access the pinPage function in bufmgr package.
-   * @see bufmgr.pinPage
-   */
-  private void pinPage(PageId pageno, Page page, boolean emptyPage)
-    throws DiskMgrException {
-
-    try {
-      SystemDefs.JavabaseBM.pinPage(pageno, page, emptyPage);
-    }
-    catch (Exception e) {
-      throw new DiskMgrException(e,"DB.java: pinPage() failed");
-    }
-
-  } // end of pinPage
+	 *  Get count of Triples in RDF DB
+	 *  @return int number of Triples
+	 */ 
+	public int getQuadrupleCnt()
+	{	
+		try
+		{
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			Total_Quadruples = Quadruple_HF.getQuadrupleCnt();
+		}
+		catch (Exception e) 
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+		return Total_Quadruples;
+	}
 
   /**
-   * short cut to access the unpinPage function in bufmgr package.
-   * @see bufmgr.unpinPage
-   */
-  private void unpinPage(PageId pageno, boolean dirty)
-    throws DiskMgrException {
-
-    try {
-      SystemDefs.JavabaseBM.unpinPage(pageno, dirty); 
-    }
-    catch (Exception e) {
-      throw new DiskMgrException(e,"DB.java: unpinPage() failed");
-    }
-
-  } // end of unpinPage
-
-
-
-
-
-
-////////////////////////////////////variable change required//////////////////////////////////////
-    public void rdfDB(int type)
-    {
-        int keytype = AttrType.attrString;
-
-        /** Initialize counter to zero **/
-        PCounter.initialize();
-
-        //Create TEMP Quadruple heap file /TOFIX
-        try
-        {
-            TQuadrupleHF = new QuadrupleHeapfile("tempresult");
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-        //Create Quadruple heap file
-        try
-        {
-            QuadrupleHF = new QuadrupleHeapfile(usedbname+"/QuadrupleHF");
-
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-        //Create ENTITES heap file: (Entity:Subject/Object)
-        try
-        {
-            //System.out.println("Creating new entities heapfile");
-            Entity_HF = new LabelHeapfile(usedbname+"/entityHF");
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-        //Create PREDICATES heap file: (Predicates)
-        try
-        {
-            //System.out.println("Creating new predicate heapfile");
-            Predicate_HF = new LabelHeapfile(usedbname+"/predicateHF");
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-
-        //Create Entity Binary tree file
-        try
-        {
-            //System.out.println("Creating new entity Binary Tree file");
-            Entity_BTree = new LabelBTreeFile(usedbname+"/entityBT",keytype,255,1);
-            Entity_BTree.close();
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-        //Create Predicate Binary tree file
-        try
-        {
-            //System.out.println("Creating new Predicate Binary Tree file");
-            Predicate_BTree = new LabelBTreeFile(usedbname+"/predicateBT",keytype,255,1);
-            Predicate_BTree.close();
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-        //Create Quadruple Binary tree file
-        try
-        {
-            //System.out.println("Creating new Triple Binary Tree file");
-            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/tripleBT",keytype,255,1);
-            QuadrupleBTree.close();
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-        try
-        {
-            //System.out.println("Creating new Label Binary Tree file for checking duplicate subjects");
-            dup_tree = new LabelBTreeFile(usedbname+"/dupSubjBT",keytype,255,1);
-            dup_tree.close();
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-        try
-        {
-            //System.out.println("Creating new Label Binary Tree file for checking duplicate objects");
-            dup_Objtree = new LabelBTreeFile(usedbname+"/dupObjBT",keytype,255,1);
-            dup_Objtree.close();
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-        //Now create btree index files as per the index option
-        try
-        {
-            //System.out.println("Creating Quadruple Binary Tree file for given index option");
-            QuadrupleBTreeIndex = new QuadrupleBTreeFile(usedbname+"/Triple_BTreeIndex",keytype,255,1);
-            QuadrupleBTreeIndex.close();
-        }
-        catch(Exception e)
-        {
-            System.err.println ("Error creating B tree index for given index option"+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-
-    }
-
-    /**
-     *  Get count of Triples in RDF DB
-     *  @return int number of Triples
-     */
-
-    public int getQuadrupleCnt()
-    {
-        try
-        {
-            QuadrupleHF = new QuadrupleHeapfile(usedbname+"/QuadrupleHF");
-            Total_Quadruples = QuadrupleHF.getRecCnt();
-        }
-        catch (Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-        return Total_Quadruples;
-    }
-
-    /**
-     *  Get count of Predicates(unique) in RDF DB
-     *  @return int number of distinct Predicates
-     */
-    public int getPredicateCnt()
-    {
-        try
-        {
-            Predicate_HF = new LabelHeapfile(usedbname+"/predicateHF");
-            Total_Predicates = Predicate_HF.getRecCnt();
-        }
-        catch (Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-        return Total_Predicates;
-    }
-
-    /**
-     *  Get count of Subjects(unique) in RDF DB
-     *  @return int number of distinct subjects
-     */
-    public int getSubjectCnt()
-    {
-        Total_Subjects = 0;
-        KeyDataEntry entry = null;
-        KeyDataEntry dup_entry = null;
-        try
-        {
-            QuadrupleBTree = new QuadrupleBTreeFile(curr_dbname+"/tripleBT");
-            int keytype = AttrType.attrString;
-            dup_tree = new LabelBTreeFile(usedbname+"/dupSubjBT");
-            //Start Scanning Btree to check if  predicate already present
-            QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(null,null);
-            do
-            {
-                entry = scan.get_next();
-                if(entry != null)
-                {
-                    String label = ((StringKey)(entry.key)).getKey();
-                    String[] temp;
-                    /* delimiter */
-                    String delimiter = ":";
-                    /* given string will be split by the argument delimiter provided. */
-                    temp = label.split(delimiter);
-                    String subject = temp[0] + temp[1];
-                    //Start Scaning Label Btree to check if subject already present
-                    KeyClass low_key = new StringKey(subject);
-                    KeyClass high_key = new StringKey(subject);
-                    LabelBTFileScan dup_scan = dup_tree.new_scan(low_key,high_key);
-                    dup_entry = dup_scan.get_next();
-                    if(dup_entry == null)
-                    {
-                        //subject not present in btree, hence insert
-                        dup_tree.insert(low_key,new LID(new PageId(Integer.parseInt(temp[1])),Integer.parseInt(temp[0])));
-
-                    }
-                    dup_scan.DestroyBTreeFileScan();
-
-                }
-
-            }while(entry!=null);
-            scan.DestroyBTreeFileScan();
-            QuadrupleBTree.close();
-
-            KeyClass low_key = null;
-            KeyClass high_key = null;
-            LabelBTFileScan dup_scan = dup_tree.new_scan(low_key,high_key);
-            do
-            {
-                dup_entry = dup_scan.get_next();
-                if(dup_entry!=null)
-                    Total_Subjects++;
-
-            }while(dup_entry!=null);
-            dup_scan.DestroyBTreeFileScan();
-            dup_tree.close();
-        }
-        catch(Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-        return Total_Subjects;
-    }
-
-    /**
      *  Get count of Entities(unique) in RDF DB
      *  @return int number of distinct Entities
-     */
+     */ 
     public int getEntityCnt()
     {
-        try
-        {
-            Entity_HF = new LabelHeapfile(usedbname+"/entityHF");
-            Total_Entities = Entity_HF.getRecCnt();
-        }
-        catch (Exception e)
-        {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
-        return Total_Entities;
+            try
+            {
+                    Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+                    Total_Entities = Entity_HF.getLabelCnt();
+            }
+            catch (Exception e) 
+            {
+                    System.err.println (""+e);
+                    e.printStackTrace();
+                    Runtime.getRuntime().exit(1);
+            }
+            return Total_Entities; 
     }
 
     /**
-     *  Get count of Objects(unique) in RDF DB
-     *  @return int number of distinct objects
-     */
+	 *  Get count of Predicates(unique) in RDF DB
+	 *  @return int number of distinct Predicates
+	 */ 
+	public int getPredicateCnt()
+	{
+		try
+		{
+			Predicate_HF = new LabelHeapfile(curr_dbname+"/predicateHF");
+			Total_Predicates = Predicate_HF.getLabelCnt();
+		}
+		catch (Exception e) 
+		{
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+		return Total_Predicates; 
+	}
+
+  public int getSubjectCnt()
+  {
+      Total_Subjects = 0;
+      KeyDataEntry entry = null;
+      TreeSet<EID> subjectSet = new TreeSet<EID>((s1, s2) -> {
+          if(s1.equals(s2)) return 0;
+          return s1.pageNo.pid - s2.pageNo.pid; // to avoid skew tree
+      });
+      try
+      {
+          Quadruple_BTree = new QuadrupleBTreeFile(curr_dbname+"/quadrupleBT");
+          QuadrupleBTFileScan scan = Quadruple_BTree.new_scan(null,null);
+          do{
+              entry = scan.get_next();
+              if(entry!=null){
+                  QID qid =  ((QuadrupleLeafData)entry.data).getData();
+                  Quadruple quad = Quadruple_HF.getQuadruple(qid);
+                  EID sub_id = quad.getSubjecqid();
+        
+                  subjectSet.add(sub_id);
+              }
+          }while(entry!=null);
+          Total_Subjects = subjectSet.size();
+
+          scan.DestroyBTreeFileScan();
+          Quadruple_BTree.close();
+
+      }
+      catch(Exception e)
+      {
+          System.err.println (""+e);
+          e.printStackTrace();
+          Runtime.getRuntime().exit(1);
+      }
+      return Total_Subjects;
+    }
+
     public int getObjectCnt()
     {
         Total_Objects = 0;
         KeyDataEntry entry = null;
-        KeyDataEntry dup_entry = null;
+        TreeSet<EID> objectSet = new TreeSet<EID>((o1, o2) -> {
+            if(o1.equals(o2)) return 0;
+            return o1.pageNo.pid - o2.pageNo.pid; // to avoid skew tree
+        });
         try
         {
-            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/tripleBT");
-            int keytype = AttrType.attrString;
-            dup_Objtree = new LabelBTreeFile(usedbname+"/dupObjBT");
-            //Start Scaning Btree to check if  predicate already present
-            QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(null,null);
-            do
-            {
+            Quadruple_BTree = new QuadrupleBTreeFile(curr_dbname+"/quadrupleBT");
+            QuadrupleBTFileScan scan = Quadruple_BTree.new_scan(null,null);
+            do{
                 entry = scan.get_next();
-                if(entry != null)
-                {
-                    String label = ((StringKey)(entry.key)).getKey();
-                    String[] temp;
-                    /* delimiter */
-                    String delimiter = ":";
-                    /* given string will be split by the argument delimiter provided. */
-                    temp = label.split(delimiter);
-                    String object = temp[4] + temp[5];
-                    //Start Scaning Label Btree to check if subject already present
-                    KeyClass low_key = new StringKey(object);
-                    KeyClass high_key = new StringKey(object);
-                    LabelBTFileScan dup_scan = dup_Objtree.new_scan(low_key,high_key);
-                    dup_entry = dup_scan.get_next();
-                    if(dup_entry == null)
-                    {
-                        //subject not present in btree, hence insert
-                        dup_Objtree.insert(low_key,new LID(new PageId(Integer.parseInt(temp[4])),Integer.parseInt(temp[5])));
-
-                    }
-                    dup_scan.DestroyBTreeFileScan();
-
+                if(entry!=null){
+                    QID qid =  ((QuadrupleLeafData)entry.data).getData();
+                    Quadruple quad = Quadruple_HF.getQuadruple(qid);
+                    EID obj_id = quad.getObjecqid();
+                    objectSet.add(obj_id);
                 }
-
             }while(entry!=null);
+            Total_Objects = objectSet.size();
             scan.DestroyBTreeFileScan();
-            QuadrupleBTree.close();
+            Quadruple_BTree.close();
 
-            KeyClass low_key = null;
-            KeyClass high_key = null;
-            LabelBTFileScan dup_scan = dup_Objtree.new_scan(low_key,high_key);
-            do
-            {
-                dup_entry = dup_scan.get_next();
-                if(dup_entry!=null)
-                    Total_Objects++;
-
-            }while(dup_entry!=null);
-            dup_scan.DestroyBTreeFileScan();
-            dup_Objtree.close();
         }
         catch(Exception e)
         {
@@ -1220,69 +403,70 @@ public class rdfDB implements GlobalConst {
         return Total_Objects;
     }
 
-    /**
-     * Insert a entity into the EntityHeapFIle
-     * @param Entitylabel String representing Subject/Object
-     */
-    public EID insertEntity(String EntityLabel)
-    {
-        int KeyType = AttrType.attrString;
+	/**
+	 * Insert a entity into the EntityHeapFIle
+	 * @param Entitylabel String representing Subject/Object
+	 */
+	public EID insertEntity(String EntityLabel) 
+	{
+	    int KeyType = AttrType.attrString;
         KeyClass key = new StringKey(EntityLabel);
         EID entityid = null;
 
         //Open ENTITY BTree Index file
         try
         {
-            Entity_BTree = new LabelBTreeFile(usedbname+"/entityBT");
-            //      LabelBT.printAllLeafPages(Entity_BTree.getHeaderPage());
+			Entity_BTree = new LabelHeapBTreeFile(curr_dbname+"/entityBT");
+			//      LabelBT.printAllLeafPages(Entity_BTree.getHeaderPage());
 
-            LID lid = null;
-            KeyClass low_key = new StringKey(EntityLabel);
-            KeyClass high_key = new StringKey(EntityLabel);
-            KeyDataEntry entry = null;
+			LID lid = null;
+			KeyClass low_key = new StringKey(EntityLabel);
+			KeyClass high_key = new StringKey(EntityLabel);
+			KeyDataEntry entry = null;
 
-            //Start Scaning Btree to check if entity already present
-            LabelBTFileScan scan = Entity_BTree.new_scan(low_key,high_key);
-            entry = scan.get_next();
-            if(entry!=null)
-            {
-                if(EntityLabel.equals(((StringKey)(entry.key)).getKey()))
-                {
-                    //return already existing EID ( convert lid to EID)
-                    lid =  ((LabelLeafData)entry.data).getData();
-                    entityid = lid.returnEID();
-                    scan.DestroyBTreeFileScan();
-                    Entity_BTree.close();
-                    return entityid;
-                }
-            }
+			//Start Scaning Btree to check if entity already present
+			LabelHeapBTFileScan scan = Entity_BTree.new_scan(low_key,high_key);
+			entry = scan.get_next();
+			if(entry!=null)
+			{
+				if(EntityLabel.equals(((StringKey)(entry.key)).getKey()))
+				{
+						//return already existing EID ( convert lid to EID)
+						lid =  ((LabelHeapLeafData)entry.data).getData();
+						entityid = lid.returnEID();
+						scan.DestroyBTreeFileScan();
+						Entity_BTree.close();
+						return entityid;
+				}
+			}
 
-            scan.DestroyBTreeFileScan();
-            //Insert into Entity HeapFile
-            lid = Entity_HF.insertRecord(EntityLabel.getBytes());
+			scan.DestroyBTreeFileScan();
+			//Insert into Entity HeapFile
+			lid = Entity_HF.insertLabel(EntityLabel);   
 
-            //Insert into Entity Btree file key,lid
-            Entity_BTree.insert(key,lid);
+			//Insert into Entity Btree file key,lid
+			Entity_BTree.insert(key,lid); 
 
-            entityid = lid.returnEID();
-            Entity_BTree.close();
+			entityid = lid.returnEID();
+			Entity_BTree.close();
         }
         catch(Exception e)
         {
-            System.err.println ("*** Error inserting entity ");
-            e.printStackTrace();
+                System.err.println ("*** Error inserting entity ");
+                e.printStackTrace();
         }
 
         return entityid; //Return EID
-    }
+	}
 
-    /**
-     * Delete a entity into the EntityHeapFile
-     * @param Entitylabel String representing Subject/Object
-     * @return boolean success when deleted else false
-     */
-    public boolean deleteEntity(String EntityLabel)
-    {
+
+	/**
+	 * Delete a entity into the EntityHeapFile
+	 * @param Entitylabel String representing Subject/Object
+	 * @return boolean success when deleted else false
+	 */
+	public boolean deleteEntity(String EntityLabel)
+	{
         boolean success = false;
         int KeyType = AttrType.attrString;
         KeyClass key = new StringKey(EntityLabel);
@@ -1291,39 +475,39 @@ public class rdfDB implements GlobalConst {
         //Open ENTITY BTree Index file
         try
         {
-            Entity_HF = new LabelHeapfile(usedbname+"/entityHF");
-            Entity_BTree = new LabelBTreeFile(usedbname+"/entityBT");
-            //      LabelBT.printAllLeafPages(Entity_BTree.getHeaderPage());
+			Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+			Entity_BTree = new LabelHeapBTreeFile(curr_dbname+"/entityBT");
 
-            LID lid = null;
-            KeyClass low_key = new StringKey(EntityLabel);
-            KeyClass high_key = new StringKey(EntityLabel);
-            KeyDataEntry entry = null;
+			LID lid = null;
+			KeyClass low_key = new StringKey(EntityLabel);
+			KeyClass high_key = new StringKey(EntityLabel);
+			KeyDataEntry entry = null;
 
-            //Start Scaning Btree to check if entity already present
-            LabelBTFileScan scan = Entity_BTree.new_scan(low_key,high_key);
-            entry = scan.get_next();
-            if(entry!=null)
-            {
-                if(EntityLabel.equals(((StringKey)(entry.key)).getKey()))
-                {
-                    //System.out.println(((StringKey)(entry.key)).getKey());
-                    lid =  ((LabelLeafData)entry.data).getData();
-                    success = Entity_HF.deleteRecord(lid) & Entity_BTree.Delete(low_key,lid);
-                }
-            }
-            scan.DestroyBTreeFileScan();
-            Entity_BTree.close();
+			//Start Scaning Btree to check if entity already present
+			LabelHeapBTFileScan scan = Entity_BTree.new_scan(low_key,high_key);
+			entry = scan.get_next();
+			if(entry!=null)
+			{
+				if(EntityLabel.equals(((StringKey)(entry.key)).getKey()))
+				{
+						//System.out.println(((StringKey)(entry.key)).getKey());        
+						lid =  ((LabelHeapLeafData)entry.data).getData();
+						success = Entity_HF.deleteLabel(lid) & Entity_BTree.Delete(low_key,lid);
+				}
+			}
+			scan.DestroyBTreeFileScan();
+			Entity_BTree.close();
         }
         catch(Exception e)
         {
-            System.err.println ("*** Error deleting entity " + e);
-            e.printStackTrace();
+                System.err.println ("*** Error deleting entity " + e);
+                e.printStackTrace();
         }
         return success;
-    }
-    public PID insertPredicate(String PredicateLabel)
-    {
+	}
+
+	public PID insertPredicate(String PredicateLabel)
+	{
         PID predicateid = null;
         LID lid = null;
 
@@ -1333,45 +517,47 @@ public class rdfDB implements GlobalConst {
         //Open PREDICATE BTree Index file
         try
         {
-            Predicate_BTree = new LabelBTreeFile(usedbname+"/predicateBT");
-            //LabelBT.printAllLeafPages(Predicate_BTree.getHeaderPage());
-            KeyClass low_key = new StringKey(PredicateLabel);
-            KeyClass high_key = new StringKey(PredicateLabel);
-            KeyDataEntry entry = null;
+                Predicate_BTree = new LabelHeapBTreeFile(curr_dbname+"/predicateBT"); 
+                //LabelBT.printAllLeafPages(Predicate_BTree.getHeaderPage());
+                KeyClass low_key = new StringKey(PredicateLabel);
+                KeyClass high_key = new StringKey(PredicateLabel);
+                KeyDataEntry entry = null;
 
-            //Start Scaning Btree to check if  predicate already present
-            LabelBTFileScan scan = Predicate_BTree.new_scan(low_key,high_key);
-            entry = scan.get_next();
-            if(entry != null)
-            {
-                if(PredicateLabel.compareTo(((StringKey)(entry.key)).getKey()) == 0)
+                //Start Scaning Btree to check if  predicate already present
+                LabelHeapBTFileScan scan = Predicate_BTree.new_scan(low_key,high_key);
+                entry = scan.get_next();
+                if(entry != null)
                 {
-                    //return already existing EID ( convert lid to EID)
-                    predicateid = ((LabelLeafData)(entry.data)).getData().returnPID();
-                    scan.DestroyBTreeFileScan();
-                    Predicate_BTree.close(); //Close the Predicate Btree file
-                    return predicateid;
+                        if(PredicateLabel.compareTo(((StringKey)(entry.key)).getKey()) == 0)
+                        {
+                                //return already existing EID ( convert lid to EID)
+                                predicateid = ((LabelHeapLeafData)(entry.data)).getData().returnPID();
+                                scan.DestroyBTreeFileScan();
+                                Predicate_BTree.close(); //Close the Predicate Btree file
+                                return predicateid;
+                        }
                 }
-            }
-            scan.DestroyBTreeFileScan();
-            //Insert into Predicate HeapFile
-            lid = Predicate_HF.insertRecord(PredicateLabel.getBytes());
-            //Insert into Predicate Btree file key,lid
-            Predicate_BTree.insert(key,lid);
-            predicateid = lid.returnPID();
-            Predicate_BTree.close(); //Close the Predicate Btree file
+                scan.DestroyBTreeFileScan();
+                //Insert into Predicate HeapFile
+                // lid = Predicate_HF.insertLabel(PredicateLabel.getBytes());
+                lid = Predicate_HF.insertLabel(PredicateLabel);
+                //Insert into Predicate Btree file key,lid
+                Predicate_BTree.insert(key,lid); 
+                predicateid = lid.returnPID();
+                Predicate_BTree.close(); //Close the Predicate Btree file
         }
         catch(Exception e)
         {
-            System.err.println (""+e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
+                System.err.println (""+e);
+                e.printStackTrace();
+                Runtime.getRuntime().exit(1);
         }
         return predicateid;
-    }
+	}
 
-    public boolean deletePredicate(String PredicateLabel)
-    {
+
+	public boolean deletePredicate(String PredicateLabel)
+	{
         boolean success = false;
         int KeyType = AttrType.attrString;
         KeyClass key = new StringKey(PredicateLabel);
@@ -1380,158 +566,536 @@ public class rdfDB implements GlobalConst {
         //Open ENTITY BTree Index file
         try
         {
-            Predicate_HF = new LabelHeapfile(usedbname+"/predicateHF");
-            Predicate_BTree = new LabelBTreeFile(usedbname+"/predicateBT");
-            //      LabelBT.printAllLeafPages(Entity_BTree.getHeaderPage());
+                Predicate_HF = new LabelHeapfile(curr_dbname+"/predicateHF");
+                Predicate_BTree = new LabelHeapBTreeFile(curr_dbname+"/predicateBT");
+                //      LabelBT.printAllLeafPages(Entity_BTree.getHeaderPage());
 
-            LID lid = null;
-            KeyClass low_key = new StringKey(PredicateLabel);
-            KeyClass high_key = new StringKey(PredicateLabel);
-            KeyDataEntry entry = null;
+                LID lid = null;
+                KeyClass low_key = new StringKey(PredicateLabel);
+                KeyClass high_key = new StringKey(PredicateLabel);
+                KeyDataEntry entry = null;
 
-            //Start Scanning BTree to check if entity already present
-            LabelBTFileScan scan = Predicate_BTree.new_scan(low_key,high_key);
-            entry = scan.get_next();
-            if(entry!=null)
-            {
-                if(PredicateLabel.equals(((StringKey)(entry.key)).getKey()))
+                //Start Scanning BTree to check if entity already present
+                LabelHeapBTFileScan scan = Predicate_BTree.new_scan(low_key,high_key);
+                entry = scan.get_next();
+                if(entry!=null)
                 {
-                    //System.out.println(((StringKey)(entry.key)).getKey());
-                    lid =  ((LabelLeafData)entry.data).getData();
-                    success = Predicate_HF.deleteRecord(lid) & Predicate_BTree.Delete(low_key,lid);
+                        if(PredicateLabel.equals(((StringKey)(entry.key)).getKey()))
+                        {
+                                //System.out.println(((StringKey)(entry.key)).getKey());        
+                                lid =  ((LabelHeapLeafData)entry.data).getData();
+                                success = Predicate_HF.deleteLabel(lid) & Predicate_BTree.Delete(low_key,lid);
+                        }
                 }
-            }
-            scan.DestroyBTreeFileScan();
-            Predicate_BTree.close();
+                scan.DestroyBTreeFileScan();
+                Predicate_BTree.close();
         }
         catch(Exception e)
         {
-            System.err.println ("*** Error deleting predicate " + e);
-            e.printStackTrace();
+                System.err.println ("*** Error deleting predicate " + e);
+                e.printStackTrace();
         }
-
+        
         return success;
-    }
-    public QID insertQuadruple(byte[] QuadruplePtr)
-            throws Exception
-    {
-        QID Quadrupleid;
-        QID qid = null;
-        try
-        {
-            //Open Triple BTree Index file
-            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/QuadrupleBT");
-            //TripleBT.printAllLeafPages(Triple_BTree.getHeaderPage());
-            int sub_slotNo = Convert.getIntValue(0,triplePtr);
-            int sub_pageNo = Convert.getIntValue(4,triplePtr);
-            int pred_slotNo = Convert.getIntValue(8,triplePtr);
-            int pred_pageNo = Convert.getIntValue(12,triplePtr);
-            int obj_slotNo = Convert.getIntValue(16,triplePtr);
-            int obj_pageNo = Convert.getIntValue(20,triplePtr);
-            double confidence =Convert.getDoubleValue(24,triplePtr);
-            String key = new String(Integer.toString(sub_slotNo) +':'+ Integer.toString(sub_pageNo) +':'+ Integer.toString(pred_slotNo) + ':' + Integer.toString(pred_pageNo) +':' + Integer.toString(obj_slotNo) +':'+ Integer.toString(obj_pageNo));
-            KeyClass low_key = new StringKey(key);
-            KeyClass high_key = new StringKey(key);
-            KeyDataEntry entry = null;
+	}
 
-            //Start Scaning Btree to check if  predicate already present
-            QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key,high_key);
-            entry = scan.get_next();
-            if(entry != null)
-            {
-                //System.out.println("Duplicate Triple found : " + ((StringKey)(entry.key)).getKey());
-                if(key.compareTo(((StringKey)(entry.key)).getKey()) == 0)
-                {
-                    //return already existing TID
-                    Quadrupleid = ((QuadrupleLeafData)(entry.data)).getData();
-                    Quadruple record = Triple_HF.getRecord(tripleid);
-                    double orig_confidence = record.getConfidence();
-                    if(orig_confidence > confidence)
-                    {
-                        Quadruple newRecord = new Quadruple(triplePtr,0,32);
-                        Triple_HF.updateRecord(tripleid,newRecord);
-                    }
-                    scan.DestroyBTreeFileScan();
-                    Triple_BTree.close();
-                    return tripleid;
-                }
-            }
+	public QID insertQuadruple(byte[] quadruplePtr)
+	throws Exception
+	{
+		QID quadrupleid;
+		QID qid = null;
+		try
+		{
+			//Open Triple BTree Index file
+			Quadruple_BTree = new QuadrupleBTreeFile(curr_dbname+"/quadrupleBT"); 
+			//TripleBT.printAllLeafPages(Triple_BTree.getHeaderPage());
+			int sub_slotNo = Convert.getIntValue(0,quadruplePtr);
+			int sub_pageNo = Convert.getIntValue(4,quadruplePtr);
+			int pred_slotNo = Convert.getIntValue(8,quadruplePtr); 
+			int pred_pageNo = Convert.getIntValue(12,quadruplePtr);
+			int obj_slotNo = Convert.getIntValue(16,quadruplePtr);
+			int obj_pageNo = Convert.getIntValue(20,quadruplePtr);
+			double confidence =Convert.getFloValue(24,quadruplePtr);
+			String key = new String(Integer.toString(sub_slotNo) +':'+ Integer.toString(sub_pageNo) +':'+ Integer.toString(pred_slotNo) + ':' + Integer.toString(pred_pageNo) +':' + Integer.toString(obj_slotNo) +':'+ Integer.toString(obj_pageNo));
+			KeyClass low_key = new StringKey(key);
+			KeyClass high_key = new StringKey(key);
+			KeyDataEntry entry = null;
 
-            //insert into triple heap file
-            //System.out.println("("+triplePtr+")");
-            qid= Triple_HF.insertTriple(triplePtr);
+			//Start Scaning Btree to check if  predicate already present
+			QuadrupleBTFileScan scan = Quadruple_BTree.new_scan(low_key,high_key);
+			entry = scan.get_next();
+			if(entry != null)
+			{
+				//System.out.println("Duplicate Triple found : " + ((StringKey)(entry.key)).getKey());
+				if(key.compareTo(((StringKey)(entry.key)).getKey()) == 0)
+				{
+					//return already existing QID 
+					quadrupleid = ((QuadrupleLeafData)(entry.data)).getData();
+					Quadruple record = Quadruple_HF.getQuadruple(quadrupleid);
+					double orig_confidence = record.getConfidence();
+					if(orig_confidence > confidence)
+					{
+						Quadruple newRecord = new Quadruple(quadruplePtr,0);
+						Quadruple_HF.updateQuadruple(quadrupleid,newRecord);
+					}       
+					scan.DestroyBTreeFileScan();
+					Quadruple_BTree.close();
+					return quadrupleid;
+				}
+			}
 
-            //System.out.println("Inserting triple key : "+ key + "tid : " + tid);
-            //insert into triple btree
-            QuadrupleBTree.insert(low_key,qid);
+			//insert into quadruple heap file
+			//System.out.println("("+quadruplePtr+")");
+			qid= Quadruple_HF.insertQuadruple(quadruplePtr);
 
-            scan.DestroyBTreeFileScan();
-            QuadrupleBTree.close();
-        }
-        catch(Exception e)
-        {
-            System.err.println ("*** Error inserting Quadruple record " + e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
-        }
+			//System.out.println("Inserting triple key : "+ key + "tid : " + tid);
+			//insert into quadruple btree
+			Quadruple_BTree.insert(low_key,qid); 
 
-        return qid;
-    }
+			scan.DestroyBTreeFileScan();
+			Quadruple_BTree.close();
+		}
+		catch(Exception e)
+		{
+				System.err.println ("*** Error inserting quadruple record " + e);
+				e.printStackTrace();
+				Runtime.getRuntime().exit(1);
+		}
 
-    public boolean deleteQuadruple(byte[] QuadruplePtr)
-    {
+		return qid;
+	}
+
+
+	public boolean deleteQuadruple(byte[] triplePtr)
+	{
         boolean success = false;
         QID quadrupleid = null;
         try
         {
-            //Open Triple BTree Index file
-            QuadrupleBTree = new QuadrupleBTreeFile(usedbname+"/QuadrupleBT");
-            //TripleBT.printAllLeafPages(Triple_BTree.getHeaderPage());
-            int sub_slotNo = Convert.getIntValue(0,triplePtr);
-            int sub_pageNo = Convert.getIntValue(4,triplePtr);
-            int pred_slotNo = Convert.getIntValue(8,triplePtr);
-            int pred_pageNo = Convert.getIntValue(12,triplePtr);
-            int obj_slotNo = Convert.getIntValue(16,triplePtr);
-            int obj_pageNo = Convert.getIntValue(20,triplePtr);
-            double confidence =Convert.getDoubleValue(24,triplePtr);
-            String key = new String(Integer.toString(sub_slotNo) +':'+ Integer.toString(sub_pageNo) +':'+ Integer.toString(pred_slotNo) + ':' + Integer.toString(pred_pageNo) +':' + Integer.toString(obj_slotNo) +':'+ Integer.toString(obj_pageNo));
-            //System.out.println(key);
-            KeyClass low_key = new StringKey(key);
-            KeyClass high_key = new StringKey(key);
-            KeyDataEntry entry = null;
+			//Open Quadruple BTree Index file
+			Quadruple_BTree = new QuadrupleBTreeFile(curr_dbname+"/quadrupleBT"); 
+			//TripleBT.printAllLeafPages(Triple_BTree.getHeaderPage());
+			int sub_slotNo = Convert.getIntValue(0,triplePtr);
+			int sub_pageNo = Convert.getIntValue(4,triplePtr);
+			int pred_slotNo = Convert.getIntValue(8,triplePtr); 
+			int pred_pageNo = Convert.getIntValue(12,triplePtr);
+			int obj_slotNo = Convert.getIntValue(16,triplePtr);
+			int obj_pageNo = Convert.getIntValue(20,triplePtr);
+			float confidence =Convert.getFloValue(24,triplePtr);
+			String key = new String(Integer.toString(sub_slotNo) +':'+ Integer.toString(sub_pageNo) +':'+ Integer.toString(pred_slotNo) + ':' + Integer.toString(pred_pageNo) +':' + Integer.toString(obj_slotNo) +':'+ Integer.toString(obj_pageNo));
+			//System.out.println(key);
+			KeyClass low_key = new StringKey(key);
+			KeyClass high_key = new StringKey(key);
+			KeyDataEntry entry = null;
 
-            //Start Scaning Btree to check if  predicate already present
-            QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key,high_key);
-            entry = scan.get_next();
-            if(entry != null)
-            {
-                //System.out.println("Triple found : " + ((StringKey)(entry.key)).getKey());
-                if(key.compareTo(((StringKey)(entry.key)).getKey()) == 0)
-                {
-                    //return already existing TID
-                    quadrupleid = ((QuadrupleLeafData)(entry.data)).getData();
-                    if(quadrupleid!=null)
-                        success = Triple_HF.deleteRecord(quadrupleid);
-                }
-            }
-            scan.DestroyBTreeFileScan();
-            if(entry!=null)
-            {
-                if(low_key!=null && quadrupleid!=null)
-                    success = success & QuadrupleBTree.Delete(low_key,quadrupleid);
-            }
+			//Start Scaning Btree to check if  predicate already present
+			QuadrupleBTFileScan scan = Quadruple_BTree.new_scan(low_key,high_key);
+			entry = scan.get_next();
+			if(entry != null)
+			{
+				//System.out.println("Triple found : " + ((StringKey)(entry.key)).getKey());
+				if(key.compareTo(((StringKey)(entry.key)).getKey()) == 0)
+				{
+					//return already existing TID 
+					quadrupleid = ((QuadrupleLeafData)(entry.data)).getData();
+					if(quadrupleid!=null)
+						success = Quadruple_HF.deleteQuadruple(quadrupleid); 
+				}
+			}
+			scan.DestroyBTreeFileScan();
+			if(entry!=null)
+			{
+			if(low_key!=null && quadrupleid!=null)
+			success = success & Quadruple_BTree.Delete(low_key,quadrupleid);
+			}
 
-            QuadrupleBTree.close();
-
+			Quadruple_BTree.close();
+                
         }
         catch(Exception e)
         {
-            System.err.println ("*** Error deleting Quadruple record " + e);
-            e.printStackTrace();
-            Runtime.getRuntime().exit(1);
+                System.err.println ("*** Error deleting quadruple record " + e);
+                e.printStackTrace();
+                Runtime.getRuntime().exit(1);
         }
-
+        
         return success;
-    }
-}//end of DB class
+	}
 
+	
+	//indexing
+	public void createIndex(int type){
+		switch(type){
+			case 1:
+			createIndex1();
+			break;
+
+			case 2:
+			createIndex2();
+			break;
+			
+			case 3:
+			createIndex3();
+			break;
+
+
+			case 4:
+			createIndex4();
+			break;
+
+			case 5:
+			createIndex5();
+			break;  
+		}
+    }
+
+	public void createIndex1()
+    {
+		//Unclustered BTree on confidence using sorted Heap File
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+					Quadruple_BTreeIndex.close();
+					Quadruple_BTreeIndex.destroyFile();
+					destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex.close();
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			double confidence = 0.0;
+			while((quadruple = am.getNext(qid)) != null)
+			{
+					confidence = quadruple.getConfidence();
+					String temp = Double.toString(confidence);
+					KeyClass key = new StringKey(temp);
+					//System.out.println("Inserting into Btree key"+ temp + " tid "+tid);
+					Quadruple_BTreeIndex.insert(key,qid); 
+					//System.out.println("Inserting into Btree key"+ temp + " tid "+tid);
+					
+			}
+			/*
+			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			KeyDataEntry entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Triple found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option1 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+	}
+
+	public void createIndex2()
+    {
+		//Unclustered BTree Index file on subject and confidence
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+					Quadruple_BTreeIndex.close();
+					Quadruple_BTreeIndex.destroyFile();
+					destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex.close();
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			double confidence = 0.0;
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				confidence = quadruple.getConfidence();
+				String temp = Double.toString(confidence);
+				Label subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				// String subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				//System.out.println("Subject--> "+subject.getLabelKey());
+				KeyClass key = new StringKey(subject.getLabel()+":"+temp);
+				//System.out.println("Inserting into Btree key"+ subject.getLabelKey() + ":" + temp + " tid "+tid);
+				Quadruple_BTreeIndex.insert(key,qid); 
+			}
+			/*
+			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			KeyDataEntry entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option2 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+    }
+
+	public void createIndex3()
+    {
+		//Unclustered BTree Index file on object and confidence
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+				Quadruple_BTreeIndex.close();
+				Quadruple_BTreeIndex.destroyFile();
+				destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex.close();
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/QuadrupleHF");
+			Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			double confidence = 0.0;
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				confidence = quadruple.getConfidence();
+				String temp = Double.toString(confidence);
+				Label object = Entity_HF.getLabel(quadruple.getObjecqid().returnLID());
+				// String object = Entity_HF.getLabel(quadruple.getObjecqid().returnLID());
+				//System.out.println("Subject--> "+subject.getLabelKey());
+				KeyClass key = new StringKey(object.getLabel()+":"+temp);
+				//System.out.println("Inserting into Btree key"+ object.getLabelKey() + ":" + temp + " tid "+tid);
+				Quadruple_BTreeIndex.insert(key,qid); 
+			}
+			/*
+			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			KeyDataEntry entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option3 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+    }
+
+	public void createIndex4()
+    {
+		//Unclustered BTree Index file on predicate and confidence
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+				Quadruple_BTreeIndex.close();
+				Quadruple_BTreeIndex.destroyFile();
+				destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex.close();
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			Predicate_HF = new LabelHeapfile(curr_dbname+"/predicateHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			double confidence = 0.0;
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				confidence = quadruple.getConfidence();
+				String temp = Double.toString(confidence);
+				Label predicate = Predicate_HF.getLabel(quadruple.getPredicateID().returnLID());
+				// String predicate = Predicate_HF.getLabel(quadruple.getPredicateID().returnLID());
+				//System.out.println("Subject--> "+subject.getLabelKey());
+				KeyClass key = new StringKey(predicate.getLabel()+":"+temp);
+				//System.out.println("Inserting into Btree key"+ predicate.getLabelKey() + ":" + temp + " tid "+tid);
+				Quadruple_BTreeIndex.insert(key,qid); 
+			}
+			/*
+			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			KeyDataEntry entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option4 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+    }
+
+	public void createIndex5()
+    {
+		//Unclustered BTree Index file on subject
+		try
+		{
+			//destroy existing index first
+			if(Quadruple_BTreeIndex != null)
+			{
+				Quadruple_BTreeIndex.close();
+				Quadruple_BTreeIndex.destroyFile();
+				destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");	
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			
+			//scan sorted heap file and insert into btree index
+			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
+			Entity_HF = new LabelHeapfile(curr_dbname+"/entityHF");
+			TScan am = new TScan(Quadruple_HF);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			KeyDataEntry entry = null;
+			QuadrupleBTFileScan scan = null;
+			
+			/*TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				Label subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				// String subject = Entity_HF.getLabel(quadruple.getSubjecqid().returnLID());
+				KeyClass key = new StringKey(subject.getLabel());
+				//     entry = null;
+
+					//Start Scanning Btree to check if subject already present
+				//     scan = Triple_BTreeIndex.new_scan(key,key);
+				//     entry = scan.get_next();
+				//     if(entry == null)
+				//     {
+				Quadruple_BTreeIndex.insert(key,qid); 
+							//System.out.println("Inserting into Btree key"+ subject.getLabelKey() + " tid "+tid);
+				//     }
+				//     else
+				//             System.out.println("Duplicate subject found "+ subject.getLabelKey() + " tid "+tid);
+							
+				//      scan.DestroyBTreeFileScan();
+			}
+			/*
+			scan = Triple_BTreeIndex.new_scan(null,null);
+			entry = null;
+			while((entry = scan.get_next())!= null)
+			{
+					System.out.println("Key found : " + ((StringKey)(entry.key)).getKey());
+			}
+			scan.DestroyBTreeFileScan();
+			*/
+			am.closescan();
+			Quadruple_BTreeIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error creating Index for option5 " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+    }
+
+	private void destroyIndex(String filename)
+    {
+		try
+		{
+			if(filename != null)
+			{
+					
+				QuadrupleBTreeFile bfile = new QuadrupleBTreeFile(filename);
+				
+				QuadrupleBTFileScan scan = bfile.new_scan(null,null);
+				QID qid = null;
+				KeyDataEntry entry = null;
+				ArrayList<KeyClass> keys = new ArrayList<KeyClass>();                   
+				ArrayList<QID> qids = new ArrayList<QID>();
+				int count = 0;                  
+
+				while((entry = scan.get_next())!= null)
+				{
+					qid =  ((QuadrupleLeafData)entry.data).getData();
+					keys.add(entry.key);
+					qids.add(qid);
+					count++;
+				}
+				scan.DestroyBTreeFileScan();
+
+				for(int i = 0; i < count ;i++)
+				{
+					//System.out.println("Deleting record having Key : " + keys.get(i) + " TID " + tids.get(i));
+					bfile.Delete(keys.get(i),qids.get(i));
+				}
+
+				bfile.close();  
+			}
+		}
+		catch(GetFileEntryException e1)
+		{
+			System.out.println("Firsttime No index present.. Expected");
+		}
+		catch(Exception e)
+		{
+			System.err.println ("*** Error destroying Index " + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+
+    }
+
+}

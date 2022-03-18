@@ -5,7 +5,7 @@ import btree.*;
 import bufmgr.*;
 import global.*;
 import quadrupleheap.*;
-import quadrupleiterator.*;
+import iterator.*;
 
 public class Stream{
     public static String dbName;
@@ -50,9 +50,9 @@ public class Stream{
                     }
                     else{
                         boolean result = true;
-                        Label subject = SystemDefs.JavabaseDB.getEntity_HF().getLabel(quadruple.getSubjecqid().returnLID());
-                        Label object = SystemDefs.JavabaseDB.getEntity_HF().getLabel(quadruple.getOubjecqid().returnLID());
-                        Label predicate = SystemDefs.JavabaseDB.getPredicate_HF.getLabel(quadruple.getPredicateID().returnLID());
+                        Label subject = SystemDefs.JavabaseDB.getEntityHandle().getLabel(quadruple.getSubjecqid().returnLID());
+                        Label object = SystemDefs.JavabaseDB.getEntityHandle().getLabel(quadruple.getObjecqid().returnLID());
+                        Label predicate = SystemDefs.JavabaseDB.getPredicateHandle().getLabel(quadruple.getPredicateID().returnLID());
                         double confidence = quadruple.getConfidence();
 
                         if(!subjectNull){
@@ -86,7 +86,7 @@ public class Stream{
         try{
             if(iterator != null)
                 iterator.closescan();
-            if(Result_HF != null && Result_HF != SystemDefs.JavabaseDB.getQuadrupleHF())
+            if(Result_HF != null && Result_HF != SystemDefs.JavabaseDB.getQuadrupleHandle())
                 Result_HF.deleteFile();
             if(qsort != null)
                 qsort.close();
@@ -196,10 +196,10 @@ public class Stream{
         KeyClass high_key = new StringKey(key);
         KeyDataEntry entry = null;
         
-        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBT();
-        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHF();
-        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntity_HF();
-        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicate_HF();
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadruple_BTree();
+        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
+        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
 
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, high_key);
         entry = scan.get_next();
@@ -287,10 +287,10 @@ public class Stream{
         Quadruple record = null;
         Label subject = null, predicate = null, object = null;
 
-        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTreeIndex();
-        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHF();
-        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntity_HF();
-        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicate_HF();
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadruple_BTreeIndex();
+        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
+        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
 
         QuadrupleHeapfile Result_HF = new QuadrupleHeapfile("Result_HF");
 
@@ -303,7 +303,7 @@ public class Stream{
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
             subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
-            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getObjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!subjectNull){
@@ -336,10 +336,10 @@ public class Stream{
         Quadruple record = null;
         Label subject = null, predicate = null, object = null;
 
-        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTreeIndex();
-        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHF();
-        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntity_HF();
-        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicate_HF();
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadruple_BTreeIndex();
+        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
+        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
 
         QuadrupleHeapfile Result_HF = new QuadrupleHeapfile("Result_HF");
 
@@ -352,7 +352,7 @@ public class Stream{
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
             subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
-            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getObjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!subjectNull){
@@ -387,10 +387,10 @@ public class Stream{
         Quadruple record = null;
         Label subject = null, predicate = null, object = null;
 
-        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTreeIndex();
-        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHF();
-        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntity_HF();
-        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicate_HF();
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadruple_BTreeIndex();
+        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
+        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
 
         QuadrupleHeapfile Result_HF = new QuadrupleHeapfile("Result_HF");
 
@@ -403,7 +403,7 @@ public class Stream{
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
             subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
-            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getObjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!subjectNull){
@@ -438,10 +438,10 @@ public class Stream{
         Quadruple record = null;
         Label subject = null, predicate = null, object = null;
 
-        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTreeIndex();
-        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHF();
-        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntity_HF();
-        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicate_HF();
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadruple_BTreeIndex();
+        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
+        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
 
         QuadrupleHeapfile Result_HF = new QuadrupleHeapfile("Result_HF");
 
@@ -454,7 +454,7 @@ public class Stream{
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
             subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
-            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getObjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!subjectNull){
@@ -489,10 +489,10 @@ public class Stream{
         Quadruple record = null;
         Label subject = null, predicate = null, object = null;
 
-        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTreeIndex();
-        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHF();
-        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntity_HF();
-        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicate_HF();
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadruple_BTreeIndex();
+        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
+        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
 
         QuadrupleHeapfile Result_HF = new QuadrupleHeapfile("Result_HF");
 
@@ -506,7 +506,7 @@ public class Stream{
             quadrupleID = ((QuadrupleLeafData)entry.data).getData();
             record = QuadrupleHF.getQuadruple(quadrupleID);
             subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
-            object = Entity_HF.getLabel(record.getOubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getObjecqid().returnLID());
             predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
 
             if(!predicateNull){
@@ -534,7 +534,7 @@ public class Stream{
             _predicateFilter = predicateFilter;
             _objectFilter = objectFilter;
             _confidenceFilter = confidenceFilter;
-            Result_HF = SystemDefs.JavabaseDB.getQuadrupleHF();
+            Result_HF = SystemDefs.JavabaseDB.getQuadrupleHandle();
         }
         catch(Exception e){
             e.printStackTrace();

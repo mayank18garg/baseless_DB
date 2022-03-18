@@ -515,4 +515,8 @@ public class QuadrupleBTIndexPage extends QuadrupleBTSortedPage{
 	throw new RedistributeException(e, "redistribute failed");
       } 
     } // end of redistribute  
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> main

@@ -163,4 +163,8 @@ class LabelHeapBTreeHeaderPage extends LHFPage {
       }
     }  
   
+<<<<<<< HEAD
 } // end of LabelBTreeHeaderPage
+=======
+} // end of LabelBTreeHeaderPage
+>>>>>>> main

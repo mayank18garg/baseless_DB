@@ -30,4 +30,8 @@ public class LabelHeapLeafData extends DataClass {
   /** set the lid
    */ 
   public void setData(LID lid) { myLid= new LID(lid.pageNo, lid.slotNo);};
+<<<<<<< HEAD
 }   
+=======
+}   
+>>>>>>> main

@@ -515,4 +515,8 @@ public class LabelHeapBTIndexPage extends LabelHeapBTSortedPage {
 	throw new RedistributeException(e, "redistribute failed");
       } 
     } // end of redistribute  
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> main

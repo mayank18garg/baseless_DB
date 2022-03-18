@@ -114,8 +114,13 @@ public class LabelHeapBTSortedPage  extends LHFPage{
      
      try {
        
+<<<<<<< HEAD
        record= LabelBT.getBytesFromEntry(entry);  
        lid=super.insertRecord(record);
+=======
+       record= LabelHeapBT.getBytesFromEntry(entry);  
+       lid=super.insertLRecord(record);
+>>>>>>> main
          if (lid==null) return null;
 	 
          if ( entry.data instanceof LabelHeapLeafData)
@@ -178,14 +183,22 @@ public class LabelHeapBTSortedPage  extends LHFPage{
     {
       try {
 	
+<<<<<<< HEAD
 	deleteRecord(lid);
+=======
+	deleteLRecord(lid);
+>>>>>>> main
 	compact_slot_dir();
 	return true;  
 	// ASSERTIONS:
 	// - slot directory is compacted
       }
       catch (Exception  e) {
+<<<<<<< HEAD
 	if (e instanceof InvalidSlotNumberException)
+=======
+	if (e instanceof heap.InvalidSlotNumberException)
+>>>>>>> main
 	  return false;
 	else
 	  throw new DeleteRecException(e, "delete record failed");
@@ -205,4 +218,7 @@ public class LabelHeapBTSortedPage  extends LHFPage{
 
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main

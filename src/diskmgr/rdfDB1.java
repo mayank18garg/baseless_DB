@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import btree.*;
 import bufmgr.*;
 import global.*;
+import labelheap.LabelHeapfile;
 import quadrupleheap.Quadruple;
 import quadrupleheap.QuadrupleHeapfile;
 import quadrupleheap.TScan;

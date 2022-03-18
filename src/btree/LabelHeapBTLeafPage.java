@@ -161,7 +161,11 @@ public class LabelHeapBTLeafPage extends LabelHeapBTSortedPage {
 	 return null;
        }
        
+<<<<<<< HEAD
        entry= LabelBT.getEntryFromBytes(getpage(),getSlotOffset(i), getSlotLength(i),
+=======
+       entry= LabelHeapBT.getEntryFromBytes(getpage(),getSlotOffset(i), getSlotLength(i),
+>>>>>>> main
                   keyType, NodeType.LEAF);
        
        return entry;
@@ -348,4 +352,7 @@ public class LabelHeapBTLeafPage extends LabelHeapBTSortedPage {
 
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main

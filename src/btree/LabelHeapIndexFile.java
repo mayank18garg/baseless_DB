@@ -89,4 +89,8 @@ public abstract class LabelHeapIndexFile
 	    DeleteRecException,
 	    IndexSearchException, 
 	    IOException;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> main
