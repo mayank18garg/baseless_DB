@@ -116,4 +116,44 @@ public class SystemDefs {
 	}
       }
     }
+
+    public static void close()
+	{
+		try
+		{
+			JavabaseDB.rdfcloseDB();
+		}
+		catch(Exception e)
+		{
+			System.out.println ("Closing RDF: ***************");
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+		try
+		{
+			JavabaseBM.flushAllPages();
+		}
+		catch(Exception e)
+		{
+			System.out.println ("Flushing Pages: ***************");
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+
+		}
+		try
+		{
+
+			JavabaseDB.closeDB();
+		}
+		catch(Exception e)
+		{
+			System.out.println ("Super DB close: ***************");
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+
+		}	
+	}
 }
