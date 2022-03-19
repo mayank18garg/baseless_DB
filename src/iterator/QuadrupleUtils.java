@@ -134,14 +134,14 @@ public class QuadrupleUtils {
         }
     }
 
-    public static int CompareQuadrupleWithQuadruple(Quadruple q1, Quadruple q2, int quadruple_fld_no){
+    public static int CompareQuadrupleWithQuadruple(QuadrupleOrder orderType, Quadruple q1, Quadruple q2){
 
         LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
         LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
         int retVal = -2;
 
-        switch(quadruple_fld_no){
-            case 1:
+        switch(orderType.qudrupleOrder){
+            case QuadrupleOrder.SubjectPredicateObjectConfidence:
                 retVal = compareSubject(q1, q2, Entity_HF);
                 if(retVal == 0){
                     retVal = comparePredicate(q1, q2, Predicate_HF);
@@ -153,8 +153,8 @@ public class QuadrupleUtils {
                     }
                 }
                 return retVal;
-            
-            case 2:
+
+            case QuadrupleOrder.PredicateSubjectObjectConfidence:
                 retVal = comparePredicate(q1, q2, Predicate_HF);
                 if(retVal == 0){
                     retVal = compareSubject(q1, q2, Entity_HF);
@@ -166,29 +166,29 @@ public class QuadrupleUtils {
                     }
                 }
                 return retVal;
-                
-            case 3:
+
+            case QuadrupleOrder.SubjectConfidence:
                 retVal = compareSubject(q1, q2, Entity_HF);
                 if(retVal == 0){
                     retVal = compareConfidence(q1, q2);
                 }
                 return retVal;
 
-            case 4:
+            case QuadrupleOrder.PredicateConfidence:
                 retVal = comparePredicate(q1, q2, Predicate_HF);
                 if(retVal == 0){
                     retVal = compareConfidence(q1, q2);
                 }
                 return retVal;
 
-            case 5:
+            case QuadrupleOrder.ObjectConfidence:
                 retVal = compareObject(q1, q2, Entity_HF);
                 if(retVal == 0){
                     retVal = compareConfidence(q1, q2);
                 }
                 return retVal;
 
-            case 6:
+            case QuadrupleOrder.Confidence:
                 retVal = compareConfidence(q1, q2);
                 return retVal;
 
