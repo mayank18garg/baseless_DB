@@ -67,54 +67,57 @@ public class SystemDefs {
 		    int num_pgs, int maxlogsize,
 		    int bufpoolsize, String replacement_policy , int indexoption)
     {
-      
-      boolean status = true;
-      JavabaseBM = null;
-      JavabaseDB = null;
-      JavabaseDBName = null;
-      JavabaseLogName = null;
-      JavabaseCatalog = null;
-      
-      try {
-	JavabaseBM = new BufMgr(bufpoolsize, replacement_policy);
-	JavabaseDB = new rdfDB(indexoption);
-/*
-	JavabaseCatalog = new Catalog(); 
-*/
-      }
-      catch (Exception e) {
-	System.err.println (""+e);
-	e.printStackTrace();
-	Runtime.getRuntime().exit(1);
-      }
-      
-      JavabaseDBName = new String(dbname);
-      JavabaseLogName = new String(logname);
-      MINIBASE_DBNAME = new String(JavabaseDBName);
-      
-      // create or open the DB
-      
-      if ((MINIBASE_RESTART_FLAG)||(num_pgs == 0)){//open an existing database
-	try {
-	  JavabaseDB.openDB(dbname);
-	}
-	catch (Exception e) {
-	  System.err.println (""+e);
-	  e.printStackTrace();
-	  Runtime.getRuntime().exit(1);
-	}
-      } 
-      else {
-	try {
-	  JavabaseDB.openDB(dbname, num_pgs);
-	  JavabaseBM.flushAllPages();
-	}
-	catch (Exception e) {
-	  System.err.println (""+e);
-	  e.printStackTrace();
-	  Runtime.getRuntime().exit(1);
-	}
-      }
+
+		  boolean status = true;
+		  JavabaseBM = null;
+		  JavabaseDB = null;
+		  JavabaseDBName = null;
+		  JavabaseLogName = null;
+		  JavabaseCatalog = null;
+
+		  try {
+			JavabaseBM = new BufMgr(bufpoolsize, replacement_policy);
+			JavabaseDB = new rdfDB(indexoption);
+		/*
+			JavabaseCatalog = new Catalog();
+		*/
+		  }
+		  catch (Exception e) {
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		  }
+
+		  JavabaseDBName = new String(dbname);
+		  JavabaseLogName = new String(logname);
+		  MINIBASE_DBNAME = new String(JavabaseDBName);
+
+		  // create or open the DB
+
+		  if ((MINIBASE_RESTART_FLAG)||(num_pgs == 0)){//open an existing database
+			try {
+			  JavabaseDB.openDB(dbname);
+			  JavabaseDB.initFiles();
+			}
+			catch (Exception e) {
+			  System.err.println (""+e);
+			  e.printStackTrace();
+			  Runtime.getRuntime().exit(1);
+			}
+		  }
+		  else {
+			try {
+			  JavabaseDB.openDB(dbname, num_pgs);
+			  JavabaseDB.initFiles();
+			  System.out.println("init files done");
+			  JavabaseBM.flushAllPages();
+			}
+			catch (Exception e) {
+			  System.err.println (""+e);
+			  e.printStackTrace();
+			  Runtime.getRuntime().exit(1);
+			}
+		  }
     }
 
     public static void close()

@@ -24,6 +24,8 @@ public class rdfDB extends DB implements GlobalConst {
 
 	private String curr_dbname; 				//RDF Database name
 
+	private int type; //indexoption
+
 	private int Total_Subjects = 0; 			//Total count of subjects in RDF
 	private int Total_Objects = 0; 				//Total count of objects in RDF
 	private int Total_Predicates = 0; 			//Total count of predicates in RDF
@@ -115,7 +117,11 @@ public class rdfDB extends DB implements GlobalConst {
 	 * and another LabelHeapfile to store subject labels. 
 	 * You can create as many btree index files as you want over these triple and label heap files
 	 */
-	public rdfDB(int type) 
+  	public rdfDB(int indexOption){
+		  type = indexOption;
+	}
+
+	public void initFiles()
 	{
 		int keytype = AttrType.attrString;
 
@@ -259,7 +265,7 @@ public class rdfDB extends DB implements GlobalConst {
 			e.printStackTrace();
 			Runtime.getRuntime().exit(1);
 		}
-
+		System.out.println("All heap files and Btrees successfully initiated");
 	}
 
   /**
@@ -328,7 +334,8 @@ public class rdfDB extends DB implements GlobalConst {
       KeyDataEntry entry = null;
       TreeSet<EID> subjectSet = new TreeSet<EID>((s1, s2) -> {
           if(s1.equals(s2)) return 0;
-          return s1.pageNo.pid - s2.pageNo.pid; // to avoid skew tree
+		  if(s1.pageNo.pid == s2.pageNo.pid) return s1.slotNo - s2.slotNo;
+		  else return s1.pageNo.pid - s2.pageNo.pid; // to avoid skew tree
       });
       try
       {
@@ -363,10 +370,12 @@ public class rdfDB extends DB implements GlobalConst {
     {
         Total_Objects = 0;
         KeyDataEntry entry = null;
-        TreeSet<EID> objectSet = new TreeSet<EID>((o1, o2) -> {
-            if(o1.equals(o2)) return 0;
-            return o1.pageNo.pid - o2.pageNo.pid; // to avoid skew tree
-        });
+        TreeSet<EID> objectSet = new TreeSet<>((o1, o2) -> {
+			if (o1.equals(o2)) return 0;
+			// to avoid skew tree
+			if(o1.pageNo.pid == o2.pageNo.pid) return o1.slotNo - o2.slotNo;
+			else return o1.pageNo.pid - o2.pageNo.pid;
+		});
         try
         {
             Quadruple_BTree = new QuadrupleBTreeFile(curr_dbname+"/quadrupleBT");
@@ -377,7 +386,7 @@ public class rdfDB extends DB implements GlobalConst {
                     QID qid =  ((QuadrupleLeafData)entry.data).getData();
                     Quadruple quad = Quadruple_HF.getQuadruple(qid);
                     EID obj_id = quad.getObjecqid();
-                    objectSet.add(obj_id);
+					objectSet.add(obj_id);
                 }
             }while(entry!=null);
             Total_Objects = objectSet.size();

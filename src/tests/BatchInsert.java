@@ -4,6 +4,9 @@ import diskmgr.PCounter;
 import global.LID;
 import global.QID;
 import global.SystemDefs;
+import heap.HFBufMgrException;
+import heap.InvalidSlotNumberException;
+import heap.InvalidTupleSizeException;
 import quadrupleheap.Quadruple;
 
 
@@ -20,7 +23,7 @@ public class BatchInsert {
         int indexoption = 0;    //Index option
         String inputfile = null; //Datafile from which to load the data
         String rdfdbname = "";
-
+        String rdfdbpath = "";
         boolean exists = false;
 
         if(args.length == 3 )   //Check if the args are DATAFILE DATABASENAME INDEXOPTION
@@ -28,7 +31,8 @@ public class BatchInsert {
             inputfile = new String(args[0]);
             indexoption = Integer.parseInt(args[1]);
             rdfdbname = new String(args[2]);
-            dbname = "/tmp/"+rdfdbname+"_"+indexoption;
+            //rdfdbpath = "/Users/jagrutidhondage/Documents/DBMSI/dbfiles/"+rdfdbname+"_"+indexoption;
+            rdfdbname = rdfdbname+"_"+indexoption;
 
             File file = new File(inputfile);
             exists = file.exists();
@@ -53,19 +57,20 @@ public class BatchInsert {
 
         //input file exists. traverse thru the file to insert quadruples
         //get db
-        File dbfile = new File(dbname);
+        File dbfile = new File(rdfdbname);
         if(dbfile.exists()) // check id db exists
         {
             //Database exists. insert records in existing db
-            sysdef = new SystemDefs(dbname,0,1000,"Clock",indexoption);
+            System.out.println("Opening existing database: "+rdfdbname);
+            sysdef = new SystemDefs(rdfdbname,0,1000,"Clock",indexoption);
             //existingdb = true;
         }
         else
         {
             //Create new database
-            sysdef = new SystemDefs(dbname,10000,1000,"Clock",indexoption);
+            System.out.println("Creating new database: "+rdfdbname);
+            sysdef = new SystemDefs(rdfdbname,10000,1000,"Clock",indexoption);
         }
-
         //contents of quadruples
         LID sub_id = null, pred_id = null , obj_id = null;
         Quadruple quadruple;
@@ -76,14 +81,14 @@ public class BatchInsert {
             FileReader fr=new FileReader(inputfile);   //reads the file
             BufferedReader br=new BufferedReader(fr);  //creates a buffering character input stream
             String strLine;
-
+            int inputCount =0;
             while((strLine=br.readLine())!=null){
 
                 //split each line to store subject, predicate, object in respective heapfiles
                 //ip =  :Joen :knows :Eiwth		0.5232176791516268
                 strLine = strLine.replace("\t\t",":").replace(" ","").replace(":"," ").trim();
                 String[] input = strLine.split(" ");
-                if(input.length!=4) continue;
+                if(input.length!=4){ System.out.println("skipping input " + (++inputCount)); continue;}
                 String subject = input[0].trim();
                 String predicate = input[1].trim();
                 String object = input[2].trim();
@@ -129,10 +134,11 @@ public class BatchInsert {
                 }catch(Exception e){
                     System.out.println("Unable to insert quadruple");
                 }
-
+                inputCount++;
             }
 
             //parsing done
+            System.out.println("Successfully parsed " + inputCount +" records");
             System.out.println("Successfully inserted all records");
 
             //get pccounters
@@ -145,10 +151,13 @@ public class BatchInsert {
         }catch(Exception e){
             System.out.println("Error occured while parsing file");
             e.printStackTrace();
+        }finally {
+            sysdef.close();
         }
     }
 
-    public static void db_stats() {
+    public static void db_stats() throws HFBufMgrException, InvalidSlotNumberException, InvalidTupleSizeException, IOException {
+        System.out.println("Quadruple heap file record count: " + sysdef.JavabaseDB.getQuadrupleHandle().getQuadrupleCnt());
         System.out.println("Quadruple count: " + sysdef.JavabaseDB.getQuadrupleCnt());
         System.out.println("Entity count:" + sysdef.JavabaseDB.getEntityCnt());
         System.out.println("Predicate count:" +  sysdef.JavabaseDB.getPredicateCnt());
