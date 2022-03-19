@@ -87,12 +87,12 @@ public class BTSortedPage  extends HFPage{
    *  sorted in increasing key order.
    *  Only the  slot  directory is  rearranged.  The  data records remain in
    *  the same positions on the  page.
-   * 
-   *@param entry the entry to be inserted. Input parameter.
+   *
    *@return its rid where the entry was inserted; null if no space left.
    *@exception  InsertRecException error when insert
+   * @param entry the entry to be inserted. Input parameter.
    */
-   protected RID insertRecord( KeyDataEntry entry)
+   protected RID insertRecord(KeyDataEntry entry)
           throws InsertRecException 
    {
      int i;
@@ -165,9 +165,9 @@ public class BTSortedPage  extends HFPage{
 
   /**  Deletes a record from a sorted record page. It also calls
    *    HFPage.compact_slot_dir() to compact the slot directory.
-   *@param rid it specifies where a record will be deleted
    *@return true if success; false if rid is invalid(no record in the rid).
    *@exception DeleteRecException error when delete
+   * @param rid it specifies where a record will be deleted
    */
   public  boolean deleteSortedRecord(RID rid)
     throws DeleteRecException

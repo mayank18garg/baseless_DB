@@ -1099,4 +1099,3 @@ public class rdfDB extends DB implements GlobalConst {
     }
 
 }
-
