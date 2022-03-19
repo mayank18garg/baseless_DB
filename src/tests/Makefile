@@ -10,7 +10,7 @@ BatchInsert:BatchInsert.java
 	$(JAVAC) BatchInsert.java
 
 batchinsert: BatchInsert
-	$(JAVA) tests.BatchInsert
+	$(JAVA) tests.BatchInsert test_data.txt 1 mayank_test
 
 Query:Query.java
 	$(JAVAC) Query.java
@@ -22,7 +22,7 @@ Report:Report.java
 	$(JAVAC) Report.java
 
 report: Report
-	$(JAVA) tests.Report
+	$(JAVA) tests.Report mayank_test 1
 
 # test buffer manager
 

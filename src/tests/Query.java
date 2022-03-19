@@ -49,27 +49,27 @@ public class Query {
         }
 
         try{
-            Stream stream = sysdef.JavabaseDB.openStream(rdfdbname, order, subjectFilter,
-                    predicateFilter, objectFilter, confidenceFilter);
-            if(stream == null)
-                System.out.println("Could not open stream");
-            //get heap files
-            EntityHF = sysdef.JavabaseDB.getEntityHandle();
-            PredicateHF = sysdef.JavabaseDB.getPredicateHandle();
-            QID qid = new QID();
-            Quadruple quadruple = null;
-            int i =1;
-            do{
-                quadruple = stream.getNext(qid);
-                if(quadruple!=null){
-
-                    String subject = EntityHF.getLabel(quadruple.getSubjecqid().returnLID());
-                    String predicate = PredicateHF.getLabel(quadruple.getPredicateID().returnLID());
-                    String object = EntityHF.getLabel(quadruple.getObjecqid().returnLID());
-                    Double confidence = quadruple.getConfidence();
-                    System.out.println("Quadruple "+ i + ": " + subject + " " + predicate + " " + object + " " + confidence);
-                }
-            }while(quadruple!=null);
+//            Stream stream = sysdef.JavabaseDB.openStream(rdfdbname, order, subjectFilter,
+//                    predicateFilter, objectFilter, confidenceFilter);
+//            if(stream == null)
+//                System.out.println("Could not open stream");
+//            //get heap files
+//            EntityHF = sysdef.JavabaseDB.getEntityHandle();
+//            PredicateHF = sysdef.JavabaseDB.getPredicateHandle();
+//            QID qid = new QID();
+//            Quadruple quadruple = null;
+//            int i =1;
+//            do{
+//                quadruple = stream.getNext(qid);
+//                if(quadruple!=null){
+//
+//                    String subject = EntityHF.getLabel(quadruple.getSubjecqid().returnLID()).getLabel();
+//                    String predicate = PredicateHF.getLabel(quadruple.getPredicateID().returnLID()).getLabel();
+//                    String object = EntityHF.getLabel(quadruple.getObjecqid().returnLID()).getLabel();
+//                    Double confidence = quadruple.getConfidence();
+//                    System.out.println("Quadruple "+ i + ": " + subject + " " + predicate + " " + object + " " + confidence);
+//                }
+//            }while(quadruple!=null);
 
             System.out.println("Query execution complete");
             //get pccounters
