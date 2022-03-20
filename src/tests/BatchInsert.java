@@ -71,6 +71,7 @@ public class BatchInsert {
             System.out.println("Creating new database: "+rdfdbname);
             sysdef = new SystemDefs(rdfdbname,10000,1000,"Clock",indexoption);
         }
+        System.out.println("Database started");
         //contents of quadruples
         LID sub_id = null, pred_id = null , obj_id = null;
         Quadruple quadruple;
@@ -131,6 +132,7 @@ public class BatchInsert {
 
                 try{
                     QID qid = sysdef.JavabaseDB.insertQuadruple(quadruple.getQuadrupleByteArray());
+
                 }catch(Exception e){
                     System.out.println("Unable to insert quadruple");
                 }

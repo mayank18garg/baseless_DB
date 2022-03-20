@@ -2,6 +2,9 @@
 
 package diskmgr;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
@@ -20,7 +23,7 @@ public class rdfDB extends DB implements GlobalConst {
 
 	private LabelHeapBTreeFile Entity_BTree;  		//BTree Index file on Entity Heap file
 	private LabelHeapBTreeFile Predicate_BTree; 	//BTree Predicate file on Predicate Heap file
-	private QuadrupleBTreeFile Quadruple_BTree; 		//BTree Predicate file on Predicate Heap file
+	private QuadrupleBTreeFile Quadruple_BTree; 		//BTree on all fields
 
 	private String curr_dbname; 				//RDF Database name
 
@@ -58,16 +61,14 @@ public class rdfDB extends DB implements GlobalConst {
 		return TEMP_Quadruple_HF;
 	}
 
-	public QuadrupleBTreeFile getQuadruple_BTreeIndex() 
-	throws GetFileEntryException, PinPageException, ConstructPageException 
-	{
+	public QuadrupleBTreeFile getQuadruple_BTreeIndex()
+			throws GetFileEntryException, PinPageException, ConstructPageException, IOException {
 		Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex");
 		return Quadruple_BTreeIndex;
 	}
 
-  public QuadrupleBTreeFile getQuadruple_BTree() 
-	throws GetFileEntryException, PinPageException, ConstructPageException
-	{
+  public QuadrupleBTreeFile getQuadruple_BTree()
+		  throws GetFileEntryException, PinPageException, ConstructPageException, IOException {
 		Quadruple_BTree = new QuadrupleBTreeFile(curr_dbname+"/quadrupleBT");
 		return Quadruple_BTree;
 	}
@@ -108,6 +109,20 @@ public class rdfDB extends DB implements GlobalConst {
 		}
 	}
 
+	public Stream openStream(String dbname,int orderType, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter,
+							 int numbuf)
+	{
+		Stream streamObj = null;
+		try {
+			streamObj = new Stream( dbname, orderType, subjectFilter,  predicateFilter, objectFilter, confidenceFilter, numbuf);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+
+		return streamObj;
+
+	}
   
   /**Constructor for the RDF database. 
 	 * @param type is an integer denoting the different clus-tering and indexing strategies you will use for the rdf database.   
@@ -225,36 +240,9 @@ public class rdfDB extends DB implements GlobalConst {
 			Runtime.getRuntime().exit(1);
 		}
 
-		// try
-		// {
-		// 	//System.out.println("Creating new Label Binary Tree file for checking duplicate subjects");
-		// 	dup_tree = new LabelHeapBTreeFile(curr_dbname+"/dupSubjBT",keytype,255,1);
-		// 	dup_tree.close();
-		// }
-		// catch(Exception e)
-		// {
-		// 	System.err.println (""+e);
-		// 	e.printStackTrace();
-		// 	Runtime.getRuntime().exit(1);
-		// }
-
-		// try
-		// {
-		// 	//System.out.println("Creating new Label Binary Tree file for checking duplicate objects");
-		// 	dup_Objtree = new LabelHeapBTreeFile(curr_dbname+"/dupObjBT",keytype,255,1);
-		// 	dup_Objtree.close();
-		// }
-		// catch(Exception e)
-		// {
-		// 	System.err.println (""+e);
-		// 	e.printStackTrace();
-		// 	Runtime.getRuntime().exit(1);
-		// }
-
 		//Now create btree index files as per the index option
 		try
 		{
-			//System.out.println("Creating Triple Binary Tree file for given index option");
 			// Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
 			// Quadruple_BTreeIndex.close();
 			createIndex(type);
@@ -361,7 +349,7 @@ public class rdfDB extends DB implements GlobalConst {
       {
           System.err.println (""+e);
           e.printStackTrace();
-          Runtime.getRuntime().exit(1);
+          //Runtime.getRuntime().exit(1);
       }
       return Total_Subjects;
     }
@@ -398,7 +386,7 @@ public class rdfDB extends DB implements GlobalConst {
         {
             System.err.println (""+e);
             e.printStackTrace();
-            Runtime.getRuntime().exit(1);
+            //Runtime.getRuntime().exit(1);
         }
         return Total_Objects;
     }
@@ -745,7 +733,10 @@ public class rdfDB extends DB implements GlobalConst {
 
 			case 5:
 			createIndex5();
-			break;  
+			break;
+
+			default:
+				System.out.println("indexoption invalid. Skip indexing");
 		}
     }
 
@@ -755,8 +746,10 @@ public class rdfDB extends DB implements GlobalConst {
 		try
 		{
 			//destroy existing index first
-			if(Quadruple_BTreeIndex != null)
+			File file = new File(curr_dbname+"/Quadruple_BTreeIndex");
+			if(Quadruple_BTreeIndex != null || file.exists())
 			{
+					System.out.println("index btree already exists. Deleting it");
 					Quadruple_BTreeIndex.close();
 					Quadruple_BTreeIndex.destroyFile();
 					destroyIndex(curr_dbname+"/Quadruple_BTreeIndex");
@@ -764,11 +757,12 @@ public class rdfDB extends DB implements GlobalConst {
 
 			//create new
 			int keytype = AttrType.attrString;
-			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,255,1);
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex",keytype,250,1);
 			Quadruple_BTreeIndex.close();
 			
 			//scan sorted heap file and insert into btree index
-			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex"); 
+			Quadruple_BTreeIndex = new QuadrupleBTreeFile(curr_dbname+"/Quadruple_BTreeIndex");
+			//System.out.println(Quadruple_BTreeIndex.getHeaderPage().get_maxKeySize());
 			Quadruple_HF = new QuadrupleHeapfile(curr_dbname+"/quadrupleHF");
 			TScan am = new TScan(Quadruple_HF);
 			Quadruple quadruple = null;
@@ -777,22 +771,14 @@ public class rdfDB extends DB implements GlobalConst {
 			while((quadruple = am.getNext(qid)) != null)
 			{
 					confidence = quadruple.getConfidence();
-					String temp = Double.toString(confidence);
+					String temp = Double.toString(confidence);;
 					KeyClass key = new StringKey(temp);
-					//System.out.println("Inserting into Btree key"+ temp + " tid "+tid);
+					//quadruple.print();
 					Quadruple_BTreeIndex.insert(key,qid); 
 					//System.out.println("Inserting into Btree key"+ temp + " tid "+tid);
 					
 			}
-			/*
-			TripleBTFileScan scan = Triple_BTreeIndex.new_scan(null,null);
-			KeyDataEntry entry = null;
-			while((entry = scan.get_next())!= null)
-			{
-					System.out.println("Triple found : " + ((StringKey)(entry.key)).getKey());
-			}
-			scan.DestroyBTreeFileScan();
-			*/
+
 			am.closescan();
 			Quadruple_BTreeIndex.close();
 		}

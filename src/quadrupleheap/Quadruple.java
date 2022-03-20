@@ -42,7 +42,7 @@ public class Quadruple implements GlobalConst{
    * Array of offsets of the fields
    */
  
-  private short [] fldOffset = new short[] {0,8,16,24}; 
+  private short [] fldOffset = new short[] {0,8,16,24,28};
 
    /**
     * Class constructor
@@ -269,6 +269,25 @@ public class Quadruple implements GlobalConst{
   * @param type  the types in the tuple
   * @Exception IOException I/O exception
   */
+ public void print()
+         throws IOException
+ {
+     int i, val;
+     float fval;
+     // String sval;
+
+     System.out.print("[");
+     for (i=0; i< fldCnt-1; i++)
+     {
+         val = Convert.getIntValue(fldOffset[i], data);
+         System.out.print(val);
+         System.out.print(", ");
+     }
+
+     fval = Convert.getFloValue(fldOffset[i], data);
+     System.out.print(fval);
+     System.out.println("]");
+ }
 // public void print(AttrType type[])
 //     throws IOException 
 //  {
