@@ -121,7 +121,13 @@ public class Convert{
        */
       in = new ByteArrayInputStream(tmp);
       instr = new DataInputStream(in);
-      value = instr.readUTF();
+      try{
+        value = instr.readUTF();
+      }
+      catch(EOFException e){
+        value = new String(tmp);
+      }
+      // value = new String(tmp);
       return value;
     }
   

@@ -269,64 +269,25 @@ public class Quadruple implements GlobalConst{
   * @param type  the types in the tuple
   * @Exception IOException I/O exception
   */
-// public void print(AttrType type[])
-//     throws IOException 
-//  {
-//   int i, val;
-//   float fval;
-//   String sval;
+  public void print()
+  throws IOException 
+{
+int i, val;
+float fval;
+// String sval;
 
-//   System.out.print("[");
-//   for (i=0; i< fldCnt-1; i++)
-//    {
-//     switch(type[i].attrType) {
+System.out.print("[");
+for (i=0; i< fldCnt-1; i++)
+{ 
+  val = Convert.getIntValue(fldOffset[i], data);
+  System.out.print(val);
+  System.out.print(", ");
+} 
 
-//    case AttrType.attrInteger:
-//      val = Convert.getIntValue(fldOffset[i], data);
-//      System.out.print(val);
-//      break;
-
-//    case AttrType.attrReal:
-//      fval = Convert.getFloValue(fldOffset[i], data);
-//      System.out.print(fval);
-//      break;
-
-//    case AttrType.attrString:
-//      sval = Convert.getStrValue(fldOffset[i], data,fldOffset[i+1] - fldOffset[i]);
-//      System.out.print(sval);
-//      break;
-  
-//    case AttrType.attrNull:
-//    case AttrType.attrSymbol:
-//      break;
-//    }
-//    System.out.print(", ");
-//  } 
- 
-//  switch(type[fldCnt-1].attrType) {
-
-//    case AttrType.attrInteger:
-//      val = Convert.getIntValue(fldOffset[i], data);
-//      System.out.print(val);
-//      break;
-
-//    case AttrType.attrReal:
-//      fval = Convert.getFloValue(fldOffset[i], data);
-//      System.out.print(fval);
-//      break;
-
-//    case AttrType.attrString:
-//      sval = Convert.getStrValue(fldOffset[i], data,fldOffset[i+1] - fldOffset[i]);
-//      System.out.print(sval);
-//      break;
-
-//    case AttrType.attrNull:
-//    case AttrType.attrSymbol:
-//      break;
-//    }
-//    System.out.println("]");
-
-//  }
+  fval = Convert.getFloValue(fldOffset[i], data);
+  System.out.print(fval);
+  System.out.println("]");
+}
 
   
 }
