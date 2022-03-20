@@ -4,6 +4,7 @@ import javax.swing.text.html.parser.Entity;
 
 import global.AttrType;
 import global.LID;
+import global.QuadrupleOrder;
 import global.SystemDefs;
 import labelheap.Label;
 import labelheap.LabelHeapfile;
@@ -198,7 +199,7 @@ public class QuadrupleUtils {
 
     }
 
-    public static void SetValue(Quadruple value, Quadruple quadruple){
+    public static void SetValue(Quadruple quadruple, Quadruple value){
         quadruple.quadrupleCopy(value);
     }
 }

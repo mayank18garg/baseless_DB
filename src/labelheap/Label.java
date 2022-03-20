@@ -226,6 +226,7 @@ public class Label implements GlobalConst{
  /**
   * Print out the tuple
   * @param type  the types in the tuple
+ * @throws IOException
   * @Exception IOException I/O exception
   */
 //  public void print(AttrType type[])
@@ -286,11 +287,13 @@ public class Label implements GlobalConst{
 //    System.out.println("]");
 
 //  }
- public void print() throws IOException{
-     String sval;
-     sval = Convert.getStrValue(fldOffset[0], data,label_length);
-     System.out.print(sval);
- }
+
+public void print() throws IOException{
+  String sval;
+  sval = Convert.getStrValue(fldOffset[0], data,label_length);
+  System.out.print(sval);
+}
+
   /**
    * private method
    * Padding must be used when storing different types.

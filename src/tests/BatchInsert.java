@@ -7,9 +7,9 @@ import global.SystemDefs;
 import heap.HFBufMgrException;
 import heap.InvalidSlotNumberException;
 import heap.InvalidTupleSizeException;
-import quadrupleheap.Quadruple;
-
-
+import quadrupleheap.*;
+import labelheap.*;
+import btree.*;
 import java.io.*;
 
 public class BatchInsert {
@@ -148,6 +148,7 @@ public class BatchInsert {
             System.out.println("Number of disk writes: " + PCounter.wcounter);
 
             System.out.println("Print stats for database");
+            sysdef.JavabaseDB.createIndex(indexoption);
             db_stats();
 
         }catch(Exception e){

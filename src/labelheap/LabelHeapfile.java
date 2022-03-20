@@ -906,7 +906,7 @@ public class LabelHeapfile implements Filetype,  GlobalConst {
 		return true;
 	}
 
-	LScan openScan() throws InvalidTupleSizeException, IOException {
+	public LScan openScan() throws InvalidTupleSizeException, IOException {
 		LScan newscan = new LScan(this);
 		return newscan;
 	}
