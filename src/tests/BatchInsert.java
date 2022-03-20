@@ -94,7 +94,9 @@ public class BatchInsert {
                 String predicate = input[1].trim();
                 String object = input[2].trim();
                 String confidence = input[3].trim();
-
+                if(subject.isEmpty() || predicate.isEmpty() || object.isEmpty() || confidence.isEmpty()){
+                    System.out.println("skipping incorrect input " + (++inputCount)); continue;
+                }
                 //insert subject
                 try{
 
