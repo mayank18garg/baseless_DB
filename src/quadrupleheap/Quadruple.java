@@ -272,15 +272,16 @@ public class Quadruple implements GlobalConst{
   public void print()
   throws IOException 
 {
-int i, val;
+int i, val1, val2;
 float fval;
 // String sval;
 
 System.out.print("[");
 for (i=0; i< fldCnt-1; i++)
 { 
-  val = Convert.getIntValue(fldOffset[i], data);
-  System.out.print(val);
+  val1 = Convert.getIntValue(fldOffset[i], data);
+  val2 = Convert.getIntValue(fldOffset[i]+4, data)
+  System.out.print(val1+"_"+val2);
   System.out.print(", ");
 } 
 
