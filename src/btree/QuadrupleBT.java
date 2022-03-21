@@ -338,7 +338,7 @@ public class QuadrupleBT implements GlobalConst{
    *@exception PageUnpinnedException  error from lower layer
    *@exception ReplacerException  error from lower layer
    */
-  public static void printBTree(BTreeHeaderPage header) 
+  public static void printBTree(QuadrupleBTreeHeaderPage header) 
     throws IOException, 
 	   ConstructPageException, 
 	   IteratorException,
