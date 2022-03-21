@@ -1,8 +1,5 @@
 package iterator;
 
-import javax.swing.text.html.parser.Entity;
-
-import global.AttrType;
 import global.LID;
 import global.QuadrupleOrder;
 import global.SystemDefs;
@@ -12,6 +9,16 @@ import quadrupleheap.Quadruple;
 
 public class QuadrupleUtils {
 
+    /**
+     * compare quadruples based on the subject value
+     * 
+     * @param q1 First quadruple
+     * @param q2 Second quadruple
+     * @param Entity_HF Entity heapfile to get the subject value
+     * @return 
+     *  return 1 if q1 is greater than q2
+     *  return -1 if q1 is less than q2
+     */
     private static int compareSubject(Quadruple q1, Quadruple q2, LabelHeapfile Entity_HF){
         try{
             Label subject1, subject2;
@@ -47,6 +54,16 @@ public class QuadrupleUtils {
         }
     }
 
+    /**
+     * compare quadruples based on the predicate value
+     * 
+     * @param q1 First quadruple
+     * @param q2 Second quadruple
+     * @param Predicate_HF Predicate heapfile to get the predicate value
+     * @return
+     *  return 1 if q1 is greater than q2
+     *  return -1 if q1 is less than q2
+     */
     private static int comparePredicate(Quadruple q1, Quadruple q2, LabelHeapfile Predicate_HF){
         try{
             Label predicate1, predicate2;
@@ -82,6 +99,16 @@ public class QuadrupleUtils {
         }
     }
 
+    /**
+     * compare quadruples based on the object value
+     * 
+     * @param q1 First quadruple
+     * @param q2 Second quadruple
+     * @param Entity_HF Entity heapfile to get the object value
+     * @return
+     *  return 1 if q1 is greater than q2
+     *  return -1 if q1 is less than q2
+     */
     private static int compareObject(Quadruple q1, Quadruple q2, LabelHeapfile Entity_HF){
         try{
             Label object1, object2;
@@ -117,6 +144,15 @@ public class QuadrupleUtils {
         }
     }
 
+    /**
+     * compare quadruples based on confidence value
+     * 
+     * @param q1 First quadruple
+     * @param q2 Second quadruple
+     * @return
+     *  return 1 if q1 confidence is greater than q2 confidence
+     *  return -1 if q1 confidence is less than q2 confidence
+     */
     private static int compareConfidence(Quadruple q1, Quadruple q2) {
         try{
             double q1_confidence, q2_confidence;
@@ -135,12 +171,26 @@ public class QuadrupleUtils {
         }
     }
 
+    /**
+     * compares one quadruple with other quadruple based on the sort order
+     * Sequence of comparisions is given in the orderType
+     * 
+     * @param orderType The order through which the quadruples are compared
+     * @param q1 First quadruple
+     * @param q2 Second quadruple
+     * @return
+     *  return 1 if q1 is greater than q2
+     *  return -1 if q1 is less than q2
+     */
     public static int CompareQuadrupleWithQuadruple(QuadrupleOrder orderType, Quadruple q1, Quadruple q2){
 
         LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
         LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
         int retVal = -2;
 
+        //making method calls to functions based on sort orders
+        //if the quadruples are equal on one parameter, 
+        //continue comparing on other parameters in QuadrupleOrder order
         switch(orderType.qudrupleOrder){
             case QuadrupleOrder.SubjectPredicateObjectConfidence:
                 retVal = compareSubject(q1, q2, Entity_HF);
@@ -199,6 +249,11 @@ public class QuadrupleUtils {
 
     }
 
+    /**
+     * set value from one quadruple to other
+     * @param quadruple quadruple to copy the values into
+     * @param value quadruple to copy the values from
+     */
     public static void SetValue(Quadruple quadruple, Quadruple value){
         quadruple.quadrupleCopy(value);
     }
