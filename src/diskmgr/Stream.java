@@ -30,10 +30,17 @@ public class Stream{
     public static EID entityObjectID = new EID();
     public static PID predicateID = new PID();
 
+    /**
+     * sort_order propery is set to the user desired option.
+     * This property is used to sort the resultant quadruples.
+     * 
+     * @return returns the QuadrupleOrder object which contains the sort order
+     */
     public QuadrupleOrder get_sort_order()
     {
         QuadrupleOrder sort_order = null;
 
+        //create sort_order object according to the option given by the user
         switch(sortOption)
         {
             case 1:
@@ -63,6 +70,10 @@ public class Stream{
         return sort_order;
     }
 
+    /**
+     * 
+     * @return
+     */
     private Quadruple createDummyLastElement()
     {
         PageId pageno = new PageId(-1);
@@ -83,10 +94,17 @@ public class Stream{
         return quadruple;
     }
 
-    //Retrieve next quadruple in the stream
+    /**
+     * retrieve next quadruple in the stream
+     * 
+     * @param qid QID of the quadruple
+     * @return the next quadruple in the stream
+     */
     public Quadruple getNext( QID qid ){
         try{
             Quadruple quadruple = null;
+
+            //if all the filters are given
             if(scanOnBTree){
                 if(scanOnBTreeQuadruple != null){
                     Quadruple temp = new Quadruple(scanOnBTreeQuadruple);
@@ -94,6 +112,8 @@ public class Stream{
                     return temp;
                 }
             }
+
+            //if all the filters are not given
             else{
                 if(sortOption == 0)
                     quadruple = iterator.getNext(qid);
@@ -104,6 +124,8 @@ public class Stream{
 
                 while(quadruple != null){
                     //quadruple.print();
+                    
+                    //if the result heapfile is created with an indexfile
                     if(scan_entire_heapfile == false){
                         return quadruple;
                     }
@@ -112,7 +134,6 @@ public class Stream{
                         Label subject = SystemDefs.JavabaseDB.getEntityHandle().getLabel(quadruple.getSubjecqid().returnLID());
                         Label object = SystemDefs.JavabaseDB.getEntityHandle().getLabel(quadruple.getObjecqid().returnLID());
                         Label predicate = SystemDefs.JavabaseDB.getPredicateHandle().getLabel(quadruple.getPredicateID().returnLID());
-                        double confidence = quadruple.getConfidence();
 
                         //System.out.println(confidence + " " + _confidenceFilter);
                         if(!subjectNull){
@@ -144,7 +165,10 @@ public class Stream{
         return null;
     }
 
-    //Close the stream
+    /**
+     * close the stream by deleting the result heapfile 
+     * and closing the sort object
+     */
     public void closeStream(){
         try{
             if(iterator != null)
@@ -160,7 +184,19 @@ public class Stream{
         }
     }
 
-    //Constructor to create a stream object
+    /**
+     * creates a stream object which contains quadruples
+     * by taking the following parameters 
+     * 
+     * @param rdfDBName Name of the database with index option
+     * @param orderType The order in which resultant quadruples should be sorted
+     * @param subjectFilter The subject value for the quadruples which need to be returned
+     * @param predicateFilter The predicate value for the quadruples which need to be returned
+     * @param objectFilter  The object avlue for the quadruples which need to be returned
+     * @param confidenceFilter  The minimum confidence value for the quadruples which need to be returned
+     * @param numbuf
+     * @throws Exception
+     */
     public Stream(String rdfDBName, int orderType, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter, int numbuf) throws Exception {
         sortOption = orderType;
         dbName = rdfDBName;
@@ -179,13 +215,16 @@ public class Stream{
             confidenceNull = true;
         }
 
+        //find the index from the dbName
         String indexOption = dbName.substring(dbName.lastIndexOf('_') + 1);
 
+        //scan the BTree if all the filters are given
         if(!subjectNull && !objectNull && !predicateNull && !confidenceNull){
             scanBTreeIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             scanOnBTree = true;
         }
 
+        //check if the index file can be used to retrieve the results
         else{
             if(Integer.parseInt(indexOption) == 1 && !confidenceNull)
             {
@@ -208,6 +247,8 @@ public class Stream{
             {
                 scanBTSubjectIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             }
+
+            //scan the entire heapfile if the index file cannot be used
             else
             {
                 System.out.println("scan entire tree");
@@ -229,6 +270,11 @@ public class Stream{
         }
     }
 
+    /**
+     * 
+     * @throws InvalidTupleSizeException
+     * @throws IOException
+     */
     public void printScan() throws InvalidTupleSizeException, IOException {
         QID q1 = new QID();
         Quadruple q2 = null;
@@ -240,8 +286,19 @@ public class Stream{
 
         System.out.println("printing scan done");
     }
+
+    /**
+     * scans the BTree if all the filters are given
+     * @param subjectFilter The subject value to check
+     * @param predicateFilter The predicate value to check
+     * @param objectFilter  The object value to check
+     * @param confidenceFilter  The confidence value to check
+     * @return
+     * @throws Exception
+     */
     public boolean scanBTreeIndex(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter) throws Exception {
         
+        //find the entityID for the given subject
         if(getEID(subjectFilter) != null){
             entitySubjectID = getEID(subjectFilter).returnEID();
         }
@@ -250,6 +307,7 @@ public class Stream{
 			return false;
 		}
 
+        //find the predicateID for the given predicate
         if(getPredicateID(predicateFilter) != null){
             predicateID = getPredicateID(predicateFilter).returnPID();
         }
@@ -258,6 +316,7 @@ public class Stream{
 			return false;
 		}
 
+        //find the objectID for the given object
         if(getEID(objectFilter) != null){
             entityObjectID = getEID(objectFilter).returnEID();
         }
@@ -266,7 +325,7 @@ public class Stream{
 			return false;
 		}
 
-        //Compute the key to search the quadruple in the Quadruple BTree
+        //compute the key to search the quadruple in the Quadruple BTree
         String key = entitySubjectID.slotNo + ":" + entitySubjectID.pageNo.pid + ":" + predicateID.slotNo + ":" + predicateID.pageNo.pid + ":" 
                         + entityObjectID.slotNo + ":" + entityObjectID.pageNo.pid;
         KeyClass low_key = new StringKey(key);
@@ -275,8 +334,6 @@ public class Stream{
         
         QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBT();
         QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
-        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
-        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
 
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, high_key);
         entry = scan.get_next();
@@ -297,8 +354,8 @@ public class Stream{
 
     /**
      * Returns labelID for the given entity
-     * @param entityFilter
-     * @return
+     * @param entityFilter the entity value for given entity
+     * @return LID for the given entity
      */
     public static LID getEID(String entityFilter){
         LID eid = null;
@@ -326,8 +383,8 @@ public class Stream{
 
     /**
      * Returns predicateID for the given predicate
-     * @param predicateFilter
-     * @return
+     * @param predicateFilter The predicate value for given predicate
+     * @return LID for the given predicate
      */
     public static LID getPredicateID(String predicateFilter){
         LID predicateID = null;
@@ -355,7 +412,15 @@ public class Stream{
         return predicateID;
     }
 
-
+    /**
+     * scans the BTree index file to construct the result heapfile
+     * 
+     * @param subjectFilter The subject value to check
+     * @param predicateFilter The predicate value to check
+     * @param objectFilter  The object value to check
+     * @param confidenceFilter  The confidence value to compare
+     * @throws Exception
+     */
     private void scanBTConfidenceIndex(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter) throws Exception {
 
         boolean result = false;
@@ -407,6 +472,15 @@ public class Stream{
         QuadrupleBTree.close();
     }
 
+    /**
+     * scan the BTree index file to create heapfile
+     * 
+     * @param subjectFilter The subject value to check
+     * @param predicateFilter The predicate value to check
+     * @param objectFilter The object value to check
+     * @param confidenceFilter The confidence value to compare
+     * @throws Exception
+     */
     private void scanBTSubjectConfidenceIndex(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter) throws Exception {
 
         boolean result = false;
@@ -425,6 +499,8 @@ public class Stream{
         KeyClass low_key = new StringKey(subjectFilter + ":" + confidenceFilter);
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, null);
 
+        //scan the index file with the key and 
+        //insert the corresponding quadruple in the result heapfile
         while((entry = scan.get_next()) != null){
 
             result = true;
@@ -458,6 +534,15 @@ public class Stream{
         QuadrupleBTree.close();
     }
 
+    /**
+     * scan the BTree index file to create result heapfile
+     * 
+     * @param subjectFilter The subject value to check
+     * @param predicateFilter The predicate value to check
+     * @param objectFilter The object value to check
+     * @param confidenceFilter The confidence value to compare
+     * @throws Exception
+     */
     private void scanBTPredicateConfidenceIndex(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter) throws Exception {
 
         boolean result = false;
@@ -476,6 +561,8 @@ public class Stream{
         KeyClass low_key = new StringKey(predicateFilter + ":" + confidenceFilter);
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, null);
 
+        //scan the index file with the key and 
+        //insert the corresponding quadruple in the result heapfile
         while((entry = scan.get_next()) != null){
 
             result = true;
@@ -509,6 +596,15 @@ public class Stream{
         QuadrupleBTree.close();
     }
 
+    /**
+     * scan the BTree index file to create result heapfile
+     * 
+     * @param subjectFilter The subject value to check
+     * @param predicateFilter The predicate value to check
+     * @param objectFilter The object value to check
+     * @param confidenceFilter The confidence value to compare
+     * @throws Exception
+     */
     private void scanBTObjectConfidenceIndex(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter) throws Exception {
 
         boolean result = false;
@@ -527,6 +623,8 @@ public class Stream{
         KeyClass low_key = new StringKey(objectFilter + ":" + confidenceFilter);
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, null);
 
+        //scan the index file with the key and 
+        //insert the corresponding quadruple in the result heapfile
         while((entry = scan.get_next()) != null){
 
             result = true;
@@ -560,6 +658,15 @@ public class Stream{
         QuadrupleBTree.close();
     }
 
+    /**
+     * scan the BTree index file to create result heapfile
+     * 
+     * @param subjectFilter The subject value to check
+     * @param predicateFilter The predicate value to check
+     * @param objectFilter The object value to check
+     * @param confidenceFilter The confidence value to compare
+     * @throws Exception
+     */
     private void scanBTSubjectIndex(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter) throws Exception {
 
         boolean result = false;
@@ -579,6 +686,8 @@ public class Stream{
         KeyClass high_key = new StringKey(subjectFilter);
         QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, high_key);
 
+        //scan the index file with the key and 
+        //insert the corresponding quadruple in the result heapfile
         while((entry = scan.get_next()) != null){
 
             result = true;
@@ -607,6 +716,14 @@ public class Stream{
         QuadrupleBTree.close();
     }
 
+    /**
+     * scan the entire heapfile and
+     * compare with filters to return the quadruples
+     * @param subjectFilter
+     * @param predicateFilter
+     * @param objectFilter
+     * @param confidenceFilter
+     */
     private void scanEntireHeapFile(String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter){
         try{
             _subjectFilter = subjectFilter;
