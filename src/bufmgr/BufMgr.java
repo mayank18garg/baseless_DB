@@ -395,8 +395,8 @@ public class BufMgr implements GlobalConst{
 	}
       
       if (all_pages != 0) {
-	if (unpinned != 0) 
-	  throw new PagePinnedException (null, "BUFMGR: PAGE_PINNED.");
+        if (unpinned != 0)
+          throw new PagePinnedException (null, "BUFMGR: PAGE_PINNED.");
       }
     }
   

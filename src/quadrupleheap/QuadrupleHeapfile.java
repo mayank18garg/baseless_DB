@@ -70,7 +70,7 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 			String userAccName;
 			userAccName = System.getProperty(useId);
 			_fileName = _fileName + userAccName;
-
+			//System.out.println(tempfilecount);
 			String filenum = Integer.toString(tempfilecount);
 			_fileName = _fileName + filenum;
 			_ftype = TEMP;
@@ -104,7 +104,6 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 			// check error
 			if(_firstDirPageId == null)
 				throw new HFException(null, "can't create new page");
-
 			add_file_entry(_fileName, _firstDirPageId);
 			// check error(new exception: Could not add file entry
 
@@ -252,8 +251,9 @@ public class QuadrupleHeapfile implements Filetype,  GlobalConst {
 			// ASSERTIONS:
 			// - we have freePage()'d all data pages referenced by
 			// the current directory page.
-
+			//unpinPage(currentDirPageId, false);
 			nextDirPageId = currentDirPage.getNextPage();
+			unpinPage(currentDirPageId, false);
 			freePage(currentDirPageId);
 
 			currentDirPageId.pid = nextDirPageId.pid;

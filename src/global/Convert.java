@@ -4,6 +4,7 @@ package global;
 
 import java.io.*;
 import java.lang.*;
+import java.security.spec.ECField;
 
 public class Convert{
  
@@ -32,7 +33,7 @@ public class Convert{
       in = new ByteArrayInputStream(tmp);
       instr = new DataInputStream(in);
       value = instr.readInt();  
-      
+      //System.out.println(new String(tmp));
       return value;
     }
   
@@ -111,8 +112,7 @@ public class Convert{
       InputStream in;
       DataInputStream instr;
       String value;
-      byte tmp[] = new byte[length];  
-      
+      byte tmp[] = new byte[length];
       // copy the value from data array out to a tmp byte array
       System.arraycopy (data, position, tmp, 0, length);
       
@@ -121,7 +121,11 @@ public class Convert{
        */
       in = new ByteArrayInputStream(tmp);
       instr = new DataInputStream(in);
-      value = instr.readUTF();
+      try {
+        value = instr.readUTF();
+      } catch (EOFException e){
+        value = new String(tmp);
+      }
       return value;
     }
   
