@@ -9,3 +9,6 @@ src/*/Makefile
 
 #ignore .class files
 src/*/*.class
+
+#ignore text files
+src/tests/*.txt
