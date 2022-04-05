@@ -1,5 +1,5 @@
-JDKPATH = /Users/jagrutidhondage/Library/Java/JavaVirtualMachines/openjdk-17.0.1/Contents/Home
-LIBPATH = /Users/jagrutidhondage/Documents/DBMSI/minjava/javaminibase/construction
+JDKPATH = /Library/Java/JavaVirtualMachines/jdk-17.0.2.jdk/Contents/Home
+LIBPATH = /Users/mayankgarg/Desktop/DBMSI/Assignemnt1/minibase_share/javaminibase/construction
 CLASSPATH = $(JDKPATH)/lib/classes.zip:.:..:$(LIBPATH)
 BINPATH = $(JDKPATH)/bin
 JAVAC = $(JDKPATH)/bin/javac -classpath $(CLASSPATH)
