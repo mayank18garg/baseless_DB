@@ -4,6 +4,8 @@ import java.io.*;
 import diskmgr.*;
 import bufmgr.*;
 import global.*;
+import quadrupleheap.Quadruple;
+import quadrupleheap.THFPage;
 
 /**  This heapfile implementation is directory-based. We maintain a
  *  directory of info about the data pages (which are of type HFPage
@@ -859,8 +861,78 @@ public class Heapfile implements Filetype,  GlobalConst {
       return  atuple;  //(true?)OK, but the caller need check if atuple==NULL
       
     }
-  
-  
+
+	public BasicPattern getBasicPattern(RID rid)
+			throws Exception {
+
+		boolean status;
+		HFPage dirPage = new HFPage();
+		PageId currentDirPageId = new PageId();
+		HFPage dataPage = new HFPage();
+		PageId currentDataPageId = new PageId();
+		RID currentDataPageRid = new RID();
+
+		status = _findDataPage(rid,
+				currentDirPageId, dirPage,
+				currentDataPageId, dataPage,
+				currentDataPageRid);
+
+		if(status != true) return null; // record not found
+
+		BasicPattern basicPattern = dataPage.getBPRecord(rid);
+
+		/*
+		 * getRecord has copied the contents of rid into recPtr and fixed up
+		 * recLen also.  We simply have to unpin dirpage and datapage which
+		 * were originally pinned by _findDataPage.
+		 */
+
+		unpinPage(currentDataPageId,false /*undirty*/);
+
+		unpinPage(currentDirPageId,false /*undirty*/);
+
+
+		return  basicPattern;  //(true?)OK, but the caller need check if atuple==NULL
+	}
+
+	public boolean updateBasicPattern(RID rid, BasicPattern newBasicPattern) throws Exception {
+
+		boolean status;
+		HFPage dirPage = new HFPage();
+		PageId currentDirPageId = new PageId();
+		HFPage dataPage = new HFPage();
+		PageId currentDataPageId = new PageId();
+		RID currentDataPageRid = new RID();
+
+		status = _findDataPage(rid,
+				currentDirPageId, dirPage,
+				currentDataPageId, dataPage,
+				currentDataPageRid);
+
+		if(status != true) return status;	// record not found
+		BasicPattern abp  = dataPage.returnBPRecord(rid);
+
+		// Assume update a record with a record whose length is equal to
+		// the original record
+
+		if(newBasicPattern.getLength() != abp.getLength())
+		{
+			unpinPage(currentDataPageId, false /*undirty*/);
+			unpinPage(currentDirPageId, false /*undirty*/);
+
+			throw new InvalidUpdateException(null, "invalid record update");
+
+		}
+
+		// new copy of this record fits in old space;
+		abp.basicPatternCopy(newBasicPattern);
+		unpinPage(currentDataPageId, true /* = DIRTY */);
+
+		unpinPage(currentDirPageId, false /*undirty*/);
+
+
+		return true;
+	}
   /** Initiate a sequential scan.
    * @exception InvalidTupleSizeException Invalid tuple size
    * @exception IOException I/O errors

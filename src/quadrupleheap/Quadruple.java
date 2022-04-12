@@ -266,7 +266,6 @@ public class Quadruple implements GlobalConst{
 
  /**
   * Print out the tuple
-  * @param type  the types in the tuple
   * @Exception IOException I/O exception
   */
   public void print()

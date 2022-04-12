@@ -612,7 +612,88 @@ public class HFPage extends Page
       }
       
     }
-  
+
+    /**
+     * copies out record with RID rid into record pointer.
+     * <br>
+     * Status getBPRecord(RID rid, char *recPtr, int& recLen)
+     * @param	rid 	the record ID
+     * @return 	a tuple contains the record
+     * @exception   InvalidSlotNumberException Invalid slot number
+     * @exception  	IOException I/O errors
+     * @see    Tuple
+     */
+    public BasicPattern getBPRecord(RID rid )
+            throws IOException,
+            InvalidSlotNumberException
+    {
+        short recLen;
+        short offset;
+        byte []record;
+        PageId pageNo = new PageId();
+        pageNo.pid= rid.pageNo.pid;
+        curPage.pid = Convert.getIntValue (CUR_PAGE, data);
+        int slotNo = rid.slotNo;
+
+        // length of record being returned
+        recLen = getSlotLength (slotNo);
+        slotCnt = Convert.getShortValue (SLOT_CNT, data);
+        if (( slotNo >=0) && (slotNo < slotCnt) && (recLen >0)
+                && (pageNo.pid == curPage.pid))
+        {
+            offset = getSlotOffset (slotNo);
+            record = new byte[recLen];
+            System.arraycopy(data, offset, record, 0, recLen);
+            BasicPattern basicPattern = new BasicPattern(record, 0, recLen);
+            return basicPattern;
+        }
+
+        else {
+            throw new InvalidSlotNumberException (null, "BPHEAPFILE: INVALID_SLOTNO");
+        }
+
+
+    }
+
+    /**
+     * returns a tuple in a byte array[pageSize] with given RID rid.
+     * <br>
+     * in C++	Status returnRecord(RID rid, char*& recPtr, int& recLen)
+     * @param       rid     the record ID
+     * @return      a tuple  with its length and offset in the byte array
+     * @exception   InvalidSlotNumberException Invalid slot number
+     * @exception   IOException I/O errors
+     * @see 	Tuple
+     */
+    public BasicPattern returnBPRecord(RID rid )
+            throws IOException,
+            InvalidSlotNumberException
+    {
+        short recLen;
+        short offset;
+        PageId pageNo = new PageId();
+        pageNo.pid = rid.pageNo.pid;
+
+        curPage.pid = Convert.getIntValue (CUR_PAGE, data);
+        int slotNo = rid.slotNo;
+
+        // length of record being returned
+        recLen = getSlotLength (slotNo);
+        slotCnt = Convert.getShortValue (SLOT_CNT, data);
+
+        if (( slotNo >=0) && (slotNo < slotCnt) && (recLen >0)
+                && (pageNo.pid == curPage.pid))
+        {
+            offset = getSlotOffset (slotNo);
+            BasicPattern basicPattern = new BasicPattern(data, offset, recLen);
+            return basicPattern;
+        }
+        else {
+            throw new InvalidSlotNumberException (null, "HEAPFILE: INVALID_SLOTNO");
+        }
+
+    }
+
   /**
    * returns the amount of available space on the page.
    * @return  the amount of available space on the page
