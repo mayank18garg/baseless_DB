@@ -1,4 +1,4 @@
-package iterator;
+package BPIterator;
 
 import bufmgr.PageNotReadException;
 import diskmgr.Page;
@@ -10,6 +10,14 @@ import heap.InvalidTypeException;
 import heap.*;
 import quadrupleheap.*;
 import index.IndexException;
+import iterator.IteratorBMException;
+import iterator.JoinsException;
+import iterator.LowMemException;
+import iterator.PredEvalException;
+import iterator.SortException;
+import iterator.TupleUtilsException;
+import iterator.UnknowAttrType;
+import iterator.UnknownKeyTypeException;
 
 import java.io.IOException;
 
