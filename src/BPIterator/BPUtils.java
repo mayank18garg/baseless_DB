@@ -1,8 +1,9 @@
-package iterator;
+package BPIterator;
 
 import global.*;
 import heap.FieldNumberOutOfBoundException;
 import heap.Tuple;
+import iterator.UnknowAttrType;
 import labelheap.Label;
 import labelheap.LabelHeapfile;
 import quadrupleheap.Quadruple;

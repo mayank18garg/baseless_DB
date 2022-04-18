@@ -1,9 +1,10 @@
-package iterator;
+package BPIterator;
 
 
 import bufmgr.PageNotReadException;
 import global.*;
 import heap.*;
+import iterator.*;
 
 import java.io.IOException;
 
@@ -22,7 +23,7 @@ public abstract class BPFileScan extends BPIterator
   private Tuple    Jtuple;
   private int        t1_size;
   private int nOutFlds;
-  private CondExpr[]  OutputFilter;
+  //private CondExpr[]  OutputFilter;
   public FldSpec[] perm_mat;
   public int totalNumberOfAttributes;
 
@@ -31,23 +32,14 @@ public abstract class BPFileScan extends BPIterator
   /**
    *constructor
    *@param file_name heapfile to be opened
-   *@param in1[]  array showing what the attributes of the input fields are.
-   *@param s1_sizes[]  shows the length of the string fields.
-   *@param len_in1  number of attributes in the input tuple
    *@param n_out_flds  number of fields in the out tuple
-   *@param proj_list  shows what input fields go where in the output tuple
-   *@param outFilter  select expressions
    *@exception IOException some I/O fault
    *@exception FileScanException exception from this class
    *@exception TupleUtilsException exception from this class
    *@exception InvalidRelation invalid relation
    */
   public  BPFileScan (String  file_name, int n_out_flds)
-          throws IOException,
-          FileScanException,
-          TupleUtilsException,
-          InvalidRelation
-  {
+          throws IOException, FileScanException {
       tuple1 = new Tuple();
       nOutFlds = n_out_flds;
 
@@ -103,9 +95,9 @@ public abstract class BPFileScan extends BPIterator
 	   IOException,
 	   InvalidTupleSizeException,
 	   InvalidTypeException,
-	   PageNotReadException, 
-	   PredEvalException,
-	   UnknowAttrType,
+	   PageNotReadException,
+          PredEvalException,
+          UnknowAttrType,
 	   FieldNumberOutOfBoundException,
 	   WrongPermat
     {     
