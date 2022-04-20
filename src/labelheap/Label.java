@@ -244,8 +244,6 @@ public void print() throws IOException{
    * @param type   the type of tuple
    * @return short typle
    */
-  public String getLabelKey(){
-    return (new String(data));}
 
 }
 

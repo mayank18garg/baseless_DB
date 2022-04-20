@@ -8,7 +8,6 @@ import global.SystemDefs;
 import heap.InvalidTupleSizeException;
 import heap.InvalidTypeException;
 import heap.*;
-import quadrupleheap.*;
 import index.IndexException;
 import iterator.IteratorBMException;
 import iterator.JoinsException;

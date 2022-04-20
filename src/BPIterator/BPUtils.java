@@ -49,13 +49,13 @@ public class BPUtils {
                     else if (lid_1.pageNo.pid == Integer.MAX_VALUE) return 1;
                     else {
                         entity1 = entity_label_Heap.getLabel(lid_1);              // Comparing Entities
-                        t1_s = entity1.getLabelKey();
+                        t1_s = entity1.getLabel();
                     }
                     if (lid_2.pageNo.pid < 0) return 1;
                     else if (lid_2.pageNo.pid == Integer.MAX_VALUE) return -1;
                     else {
                         entity2 = entity_label_Heap.getLabel(lid_2);
-                        t2_s = entity2.getLabelKey();
+                        t2_s = entity2.getLabel();
                     }
                 } if (t1_s.compareTo(t2_s) > 0) return 1;
                 if (t1_s.compareTo(t2_s) < 0) return -1;
