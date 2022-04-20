@@ -43,12 +43,12 @@ public class BasicPattern implements GlobalConst{
 
   private short [] fldOffset;
 
-    /**
-     * private field
-     * default confidence
-     */
+  /**
+   * private field
+   * default confidence
+   */
 
-    private double confidence;
+  private double confidence;
 
    /**
     * Class constructor
@@ -74,17 +74,17 @@ public class BasicPattern implements GlobalConst{
     data = abp;
     bp_offset = offset;
     bp_length = length;
-    fldCnt = (short) (length/4); //length is the byte array size, 4 is the number of bytes required to store an integer
-    setFldOffset(fldCnt/2, offset);
+    // fldCnt = (short) (length/4); //length is the byte array size, 4 is the number of bytes required to store an integer
+    // setFldOffset(fldCnt/2, offset);
   }
 
-    private void setFldOffset(int numOfNodes, int offset) {
+    // private void setFldOffset(int numOfNodes, int offset) {
 
-      fldOffset[0] = (short)(offset);
-      for(int i = 1;i<numOfNodes;i++){
-          fldOffset[i] = (short) (fldOffset[i-1]+8);
-      }
-    }
+    //   fldOffset[0] = (short)(offset);
+    //   for(int i = 1;i<numOfNodes;i++){
+    //       fldOffset[i] = (short) (fldOffset[i-1]+8);
+    //   }
+    // }
 
     /** Constructor(used as tuple copy)
     * @param fromBasicPattern   a byte array which contains the tuple
@@ -99,9 +99,16 @@ public class BasicPattern implements GlobalConst{
     fldOffset = fromBasicPattern.copyFldOffset();
   }
 
+  public BasicPattern(int size)
+  {
+       // Creat a new tuple
+       data = new byte[size];
+       bp_offset = 0;
+       bp_length = size;     
+  }
   public NID getNodeID(int fldNo )
           throws IOException, FieldNumberOutOfBoundException {
-      if ( (fldNo > 0) && (fldNo < fldCnt))
+      if ( (fldNo > 0) && (fldNo <= fldCnt))
       {
           int slotno = Convert.getIntValue(fldOffset[fldNo -1], data);
           int pageno = Convert.getIntValue(fldOffset[fldNo -1]+4,data);
@@ -123,18 +130,31 @@ public class BasicPattern implements GlobalConst{
     return bp_length;
   }
 
-    public BasicPattern setIntFld(int fldNo, NID nid)
-            throws IOException, FieldNumberOutOfBoundException
+  public BasicPattern setIntFld(int fldNo, NID nid)
+          throws IOException, FieldNumberOutOfBoundException
+  {
+      if ( (fldNo > 0) && (fldNo <= fldCnt))
+      {
+          Convert.setIntValue (nid.slotNo, fldOffset[fldNo -1], data);
+          Convert.setIntValue (nid.pageNo.pid, fldOffset[fldNo -1]+4, data);
+          return this;
+      }
+      else
+          throw new FieldNumberOutOfBoundException (null, "BASICPATTERN:TUPLE_FLDNO_OUT_OF_BOUND");
+  }
+  
+  public BasicPattern setEIDIntFld(int fldNo, EID eid)
+        throws IOException, FieldNumberOutOfBoundException
+  {
+    if ( (fldNo > 0) && (fldNo <= fldCnt))
     {
-        if ( (fldNo > 0) && (fldNo < fldCnt))
-        {
-            Convert.setIntValue (nid.slotNo, fldOffset[fldNo -1], data);
-            Convert.setIntValue (nid.pageNo.pid, fldOffset[fldNo -1]+4, data);
-            return this;
-        }
-        else
-            throw new FieldNumberOutOfBoundException (null, "BASICPATTERN:TUPLE_FLDNO_OUT_OF_BOUND");
+        Convert.setIntValue (eid.slotNo, fldOffset[fldNo -1], data);
+        Convert.setIntValue (eid.pageNo.pid, fldOffset[fldNo -1]+4, data);
+        return this;
     }
+    else
+        throw new FieldNumberOutOfBoundException (null, "BASICPATTERN:TUPLE_FLDNO_OUT_OF_BOUND");
+  }  
 
   public BasicPattern setConfidence(double confidence) throws IOException
   {
@@ -150,8 +170,8 @@ public class BasicPattern implements GlobalConst{
   {
     byte [] temparray = fromBasicPattern.getBPByteArray();
     System.arraycopy(temparray, 0, data, bp_offset, bp_length);
-    fldCnt = fromBasicPattern.noOfFlds();
-    fldOffset = fromBasicPattern.copyFldOffset();
+    // fldCnt = fromBasicPattern.noOfFlds();
+    // fldOffset = fromBasicPattern.copyFldOffset();
   }
 
    /** This is used when you don't want to use the constructor
@@ -165,8 +185,8 @@ public class BasicPattern implements GlobalConst{
        data = abp;
        bp_offset = offset;
        bp_length = length;
-       fldCnt = (short) (length/4); //length is the byte array size, 4 is the number of bytes required to store an integer
-       setFldOffset(fldCnt/2, offset);
+      //  fldCnt = (short) (length/4); //length is the byte array size, 4 is the number of bytes required to store an integer
+      //  setFldOffset(fldCnt/2, offset);
    }
 
  /**
@@ -180,8 +200,8 @@ public class BasicPattern implements GlobalConst{
      System.arraycopy(record, offset, data, 0, length);
      bp_offset = 0;
      bp_length = length;
-     fldCnt = (short) (length/4); //length is the byte array size, 4 is the number of bytes required to store an integer
-     setFldOffset(fldCnt/2, offset);
+    //  fldCnt = (short) (length/4); //length is the byte array size, 4 is the number of bytes required to store an integer
+    //  setFldOffset(fldCnt/2, offset);
  }
 
 
@@ -237,7 +257,8 @@ public class BasicPattern implements GlobalConst{
    *
    */
 
-  public short[] copyFldOffset() 
+  
+   public short[] copyFldOffset() 
    {
      short[] newFldOffset = new short[fldCnt + 1];
      for (int i=0; i<=fldCnt; i++) {
@@ -246,6 +267,48 @@ public class BasicPattern implements GlobalConst{
      
      return newFldOffset;
    }
+
+  
+  public void setHdr (short numFlds)
+	throws IOException, InvalidTypeException, InvalidTupleSizeException		
+	{
+		if((numFlds +2)*2 > max_size)
+			throw new InvalidTupleSizeException (null, "TUPLE: TUPLE_TOOBIG_ERROR");
+
+		fldCnt = numFlds;
+		Convert.setShortValue(numFlds, bp_offset, data);
+		fldOffset = new short[numFlds+1];
+		int pos = bp_offset+2;  // start position for fldOffset[]
+
+		//sizeof short =2  +2: array siaze = numFlds +1 (0 - numFilds) and
+		//another 1 for fldCnt
+		fldOffset[0] = (short) ((numFlds +2) * 2 + bp_offset);   
+
+		Convert.setShortValue(fldOffset[0], pos, data);
+		pos +=2;
+		short incr;
+		int i;
+
+		for (i=1; i<numFlds; i++)
+		{
+      // 4 + 4 page no and slot no respectively
+			incr = 8;
+			fldOffset[i]  = (short) (fldOffset[i-1] + incr);
+			Convert.setShortValue(fldOffset[i], pos, data);
+			pos +=2;
+
+		}
+		incr = 8;
+
+		fldOffset[numFlds] = (short) (fldOffset[i-1] + incr);
+		Convert.setShortValue(fldOffset[numFlds], pos, data);
+
+		bp_length = fldOffset[numFlds] - bp_offset;
+
+		if(bp_length > max_size)
+			throw new InvalidTupleSizeException (null, "TUPLE: TUPLE_TOOBIG_ERROR");
+	}
+
 
 
     /**
