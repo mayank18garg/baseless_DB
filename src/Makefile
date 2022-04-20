@@ -19,7 +19,7 @@ DOCFILES=bufmgr diskmgr global chainexception heap btree iterator index
 ##############  update the above for each assignment in making
 
 # ASSIGN=/home/candan/Courses/CSE510spr02/minjava/javaminibase/src
-ASSIGN=/Users/pulkitkulshrestha/IdeaProjects/baseless_DB/src
+ASSIGN=/Users/mayankgarg/Desktop/DBMSI/Assignemnt1/minjava/javaminibase/src
 LIBDIR=$(ASSIGN)/lib
 KEY=$(ASSIGN)/key
 SRC=$(ASSIGN)/src
