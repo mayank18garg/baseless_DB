@@ -150,8 +150,14 @@ public class BatchInsert {
             System.out.println("Number of disk writes: " + PCounter.wcounter);
 
             System.out.println("Print stats for database");
-            sysdef.JavabaseDB.createIndex(indexoption);
             db_stats();
+
+            //sysdef.JavabaseDB.createIndex(indexoption);
+            System.out.println("Create Btree index on subject, object and composite index on Subject+Predicate+Object+Confidence");
+            sysdef.JavabaseDB.createIndex5();
+            sysdef.JavabaseDB.createIndexOnObject();
+
+
 
         }catch(Exception e){
             System.out.println("Error occured while parsing file");
