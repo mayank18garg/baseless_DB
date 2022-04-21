@@ -133,12 +133,11 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 
 	}
 
-	public Stream openStreamWOSort(String dbname, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter,
-							 int numbuf)
+	public Stream openStreamWOSort(String dbname, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter)
 	{
 		Stream streamObj = null;
 		try {
-			streamObj = new Stream( dbname, subjectFilter,  predicateFilter, objectFilter, confidenceFilter, numbuf);
+			streamObj = new Stream( dbname, subjectFilter,  predicateFilter, objectFilter, confidenceFilter);
 		}
 		catch(Exception e){
 			e.printStackTrace();

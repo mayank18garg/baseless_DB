@@ -234,7 +234,7 @@ public class Stream{
             while((t = getNextWTSort(tid))!=null)
             {
                 BasicPattern bp = new BasicPattern();
-                bp.setHdr((short)3);
+                bp.setHdr((short)2);
                 bp.setEIDIntFld(1, t.getSubjecqid());
                 bp.setEIDIntFld(2, t.getObjecqid());
                 bp.setConfidence(t.getConfidence());
@@ -364,7 +364,7 @@ public class Stream{
      * @param numbuf
      * @throws Exception
      */
-    public Stream(String rdfDBName, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter, int numbuf) throws Exception {
+    public Stream(String rdfDBName, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter) throws Exception {
         dbName = rdfDBName;
 
         //check if any filters are null
