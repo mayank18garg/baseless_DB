@@ -1,5 +1,6 @@
 package diskmgr;
 
+import heap.BasicPattern;
 import heap.InvalidTupleSizeException;
 import labelheap.*;
 import btree.*;
@@ -165,6 +166,87 @@ public class Stream{
         return null;
     }
 
+    //Retrieves next triple in stream
+    public Quadruple getNextWTSort(QID tid) throws Exception
+    {
+        try
+        {
+            QID rid = new QID();
+            Quadruple quadruple = null;
+            if(scanOnBTree)
+            {
+                if(scanOnBTreeQuadruple!=null)
+                {
+                    Quadruple temp = new Quadruple(scanOnBTreeQuadruple);
+                    scanOnBTreeQuadruple = null;
+                    return temp;
+                }
+            }
+            else
+            {
+                while((quadruple = iterator.getNext(rid)) != null)
+                {
+                    if(scan_entire_heapfile == false)
+                    {
+                        return quadruple;
+                    }
+                    else
+                    {
+                        boolean result = true;
+                        double confidence = quadruple.getConfidence();
+                        Label subject = SystemDefs.JavabaseDB.getEntityHandle().getLabel(quadruple.getSubjecqid().returnLID());
+                        Label object = SystemDefs.JavabaseDB.getEntityHandle().getLabel(quadruple.getObjecqid().returnLID());
+                        Label predicate = SystemDefs.JavabaseDB.getPredicateHandle().getLabel(quadruple.getPredicateID().returnLID());
+
+                        if(!subjectNull){
+                            result = result & (_subjectFilter.compareTo(subject.getLabel()) == 0);
+                        }
+                        if(!predicateNull){
+                            result = result & (_predicateFilter.compareTo(predicate.getLabel()) == 0);
+                        }
+                        if(!objectNull){
+                            result = result & (_objectFilter.compareTo(object.getLabel()) == 0);
+                        }
+                        if(!confidenceNull){
+                            result = result & (quadruple.getConfidence() >= _confidenceFilter);
+                        }
+                        if(result)
+                        {
+                            return quadruple;
+                        }
+                    }
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            System.out.println("Error in Stream get next\n"+e);
+        }
+        return null;
+    }
+
+
+    public BasicPattern getNextBasicPatternFromTriple(QID tid)
+    {
+        try
+        {
+            Quadruple t = null;
+            while((t = getNextWTSort(tid))!=null)
+            {
+                BasicPattern bp = new BasicPattern();
+                bp.setHdr((short)3);
+                bp.setEIDIntFld(1, t.getSubjecqid());
+                bp.setEIDIntFld(2, t.getObjecqid());
+                bp.setConfidence(t.getConfidence());
+                return bp;
+            }
+        }
+        catch(Exception e)
+        {
+            System.out.println("Error in Stream get next basic pattern\n"+e);
+        }
+        return null;
+    }
     /**
      * close the stream by deleting the result heapfile 
      * and closing the sort object
@@ -268,6 +350,52 @@ public class Stream{
                 }
             }
         }
+    }
+
+    /**
+     * creates a stream object which contains quadruples
+     * by taking the following parameters
+     *
+     * @param rdfDBName Name of the database with index option
+     * @param subjectFilter The subject value for the quadruples which need to be returned
+     * @param predicateFilter The predicate value for the quadruples which need to be returned
+     * @param objectFilter  The object avlue for the quadruples which need to be returned
+     * @param confidenceFilter  The minimum confidence value for the quadruples which need to be returned
+     * @param numbuf
+     * @throws Exception
+     */
+    public Stream(String rdfDBName, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter, int numbuf) throws Exception {
+        dbName = rdfDBName;
+
+        //check if any filters are null
+        if(subjectFilter==null){
+            subjectNull = true;
+        }
+        if(objectFilter == null){
+            objectNull = true;
+        }
+        if(predicateFilter == null){
+            predicateNull = true;
+        }
+        if(confidenceFilter == 0){
+            confidenceNull = true;
+        }
+
+        //scan the BTree if all the filters are given
+        if(!subjectNull && !objectNull && !predicateNull && !confidenceNull){
+            scanBTreeIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            scanOnBTree = true;
+        }
+        //scan the entire heapfile if the index file cannot be used
+        else
+        {
+            System.out.println("scan entire tree");
+            scan_entire_heapfile = true;
+            scanEntireHeapFile(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+        }
+
+        //Sort the results
+        iterator = new TScan(Result_HF);
     }
 
     /**

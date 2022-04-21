@@ -11,7 +11,10 @@ public class PCounter {
 		rcounter = 0;
 		wcounter = 0;
 	}
-
+	public static void reset(){
+		rcounter = 0;
+		wcounter = 0;
+	}
 	/*
         Increment the read page counter
         */

@@ -132,6 +132,21 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 		return streamObj;
 
 	}
+
+	public Stream openStreamWOSort(String dbname, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter,
+							 int numbuf)
+	{
+		Stream streamObj = null;
+		try {
+			streamObj = new Stream( dbname, subjectFilter,  predicateFilter, objectFilter, confidenceFilter, numbuf);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+
+		return streamObj;
+
+	}
   
   /**Constructor for the RDF database. 
 	 * @param indexOption is an integer denoting the different clus-tering and indexing strategies you will use for the rdf database.
@@ -144,7 +159,10 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
   	public rdfDB(int indexOption){
 		  type = indexOption;
 	}
-
+	public void resetCounter(){
+		  System.out.println("Reseting PCCounter");
+		  PCounter.reset();
+	}
 	public void initFiles()
 	{
 		int keytype = AttrType.attrString;
@@ -953,6 +971,48 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 			Runtime.getRuntime().exit(1);
 		}
     }
+
+	public void createIndexOnObject()
+	{
+		//Unclustered BTree Index file on object
+		try
+		{
+			//destroy existing index first
+			if(QuadrupleBTIndex != null)
+			{
+				QuadrupleBTIndex.close();
+				QuadrupleBTIndex.destroyFile();
+				destroyIndex(dbname+"/Object_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			//scan sorted heap file and insert into btree index
+			QuadrupleBTIndex = new QuadrupleBTreeFile(dbname+"/Object_BTreeIndex");
+			QuadrupleHeap = new QuadrupleHeapfile(dbname+"/quadrupleHF");
+			EntityHeap = new LabelHeapfile(dbname+"/entityHF");
+			TScan am = new TScan(QuadrupleHeap);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			KeyDataEntry entry = null;
+			QuadrupleBTFileScan scan = null;
+
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				Label object = EntityHeap.getLabel(quadruple.getObjecqid().returnLID());
+				KeyClass key = new StringKey(object.getLabel());
+				QuadrupleBTIndex.insert(key,qid);
+			}
+			am.closescan();
+			QuadrupleBTIndex.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("Error: cannot create index5" + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+	}
 
 	private void destroyIndex(String filename)
     {

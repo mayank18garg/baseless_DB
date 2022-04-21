@@ -4,6 +4,7 @@ package BPIterator;
 import bufmgr.PageNotReadException;
 import global.*;
 import heap.*;
+import index.IndexException;
 import iterator.*;
 
 import java.io.IOException;
@@ -12,7 +13,7 @@ import java.io.IOException;
  *open a heapfile and according to the condition expression to get
  *output file, call get_next to get all tuples
  */
-public abstract class BPFileScan extends BPIterator
+public class BPFileScan extends BPIterator
 {
   private AttrType[] _in1;
   private short in1_len;
@@ -90,7 +91,8 @@ public abstract class BPFileScan extends BPIterator
    *@exception FieldNumberOutOfBoundException array out of bounds
    *@exception WrongPermat exception for wrong FldSpec argument
    */
-  public BasicPattern get_next()
+  @Override
+  public BasicPattern getnext()
     throws JoinsException,
 	   IOException,
 	   InvalidTupleSizeException,
@@ -128,7 +130,7 @@ public abstract class BPFileScan extends BPIterator
       }
     }
 
-  /**
+    /**
    *implement the abstract method close() from super class Iterator
    *to finish cleaning up
    */
