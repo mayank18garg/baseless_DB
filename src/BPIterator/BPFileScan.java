@@ -1,11 +1,11 @@
 package BPIterator;
 
+import java.io.IOException;
+
 import bufmgr.PageNotReadException;
 import global.*;
 import heap.*;
 import iterator.*;
-
-import java.io.IOException;
 
 /**
  * open a heapfile and according to the condition expression to get
@@ -18,7 +18,6 @@ public class BPFileScan extends BPIterator {
 	private Heapfile f;
 	private Scan scan;
 	private Tuple tuple1;
-	private Tuple Jtuple;
 	// private int t1_size;
 	// private int nOutFlds;
 	// private CondExpr[] OutputFilter;
