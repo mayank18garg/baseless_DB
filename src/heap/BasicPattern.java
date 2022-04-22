@@ -6,7 +6,11 @@ import global.*;
 
 import java.io.IOException;
 
+import labelheap.*;
+
 public class BasicPattern implements GlobalConst {
+
+	public static SystemDefs sysdef = null;
 
 	/**
 	 * Maximum size of any tuple
@@ -404,20 +408,39 @@ public class BasicPattern implements GlobalConst {
 	 */
 	public void print()
 			throws IOException {
-		int i, val1, val2;
-		float fval;
-		// String sval;
-
+		LabelHeapfile Entity_HF = sysdef.JavabaseDB.getEntityHandle();
 		System.out.print("[");
-		for (i = 0; i < fldCnt; i++) {
-			val1 = Convert.getIntValue(fldOffset[i], data);
-			val2 = Convert.getIntValue(fldOffset[i] + 4, data);
-			System.out.print(val1 + "_" + val2);
-			System.out.print(", ");
+		try {
+			for (int i = 1; i <= fldCnt - 1; i++) {
+				Label subject = Entity_HF.getLabel(this.getEID(i).returnLID());
+				System.out.printf("%30s  ", subject.getLabel());
+			}
+			System.out.print(getDoubleFld(fldCnt));
+			System.out.println("]");
+
+		} catch (InvalidSlotNumberException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidTupleSizeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (HFException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (HFDiskMgrException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (HFBufMgrException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (FieldNumberOutOfBoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		// print confidence
-		System.out.print(confidence);
-		System.out.println("]");
+
 	}
 
 }
