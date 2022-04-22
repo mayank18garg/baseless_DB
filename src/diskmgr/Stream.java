@@ -180,7 +180,6 @@ public class Stream {
                         return quadruple;
                     } else {
                         boolean result = true;
-                        double confidence = quadruple.getConfidence();
                         Label subject = SystemDefs.JavabaseDB.getEntityHandle()
                                 .getLabel(quadruple.getSubjecqid().returnLID());
                         Label object = SystemDefs.JavabaseDB.getEntityHandle()
@@ -217,7 +216,7 @@ public class Stream {
             Quadruple t = null;
             while ((t = getNextWTSort(tid)) != null) {
                 BasicPattern bp = new BasicPattern();
-                bp.setHdr((short) 2);
+                bp.setHdr((short) 3);
                 bp.setEIDIntFld(1, t.getSubjecqid());
                 bp.setEIDIntFld(2, t.getObjecqid());
                 bp.setDoubleFld(3, t.getConfidence());
