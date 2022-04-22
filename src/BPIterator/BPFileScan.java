@@ -49,13 +49,16 @@ public class BPFileScan extends BPIterator {
 			throw new FileScanException(e, "Create new heapfile failed");
 		}
 		length = n_out_flds;
-		types = new AttrType[length * 2];
-		for (int i = 0; i < length * 2; i++) {
+		types = new AttrType[(length - 1) * 2 + 1];
+		int i = 0;
+		for (i = 0; i < ((length - 1) * 2); i++) {
 			types[i] = new AttrType(AttrType.attrInteger);
 		}
-
+		types[i] = new AttrType(AttrType.attrReal);
+		s_sizes = new short[1];
+		s_sizes[0] = (short) ((length - 1) * 2 * 4 + 1 * 8);
 		try {
-			tuple1.setHdr((short) (length * 2), types, s_sizes);
+			tuple1.setHdr((short) ((length - 1) * 2 + 1), types, s_sizes);
 		} catch (InvalidTypeException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -97,12 +100,12 @@ public class BPFileScan extends BPIterator {
 				return null;
 			}
 
-			tuple1.setHdr((short) (length * 2), types, s_sizes);
+			tuple1.setHdr((short) ((length - 1) * 2 + 1), types, s_sizes);
 			short len = tuple1.noOfFlds();
 
 			BasicPattern bp = new BasicPattern();
 			try {
-				bp.setHdr((short) (len / 2));
+				bp.setHdr((short) ((len) / 2 + 1));
 			} catch (InvalidTupleSizeException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -113,12 +116,12 @@ public class BPFileScan extends BPIterator {
 				int slot_no = tuple1.getIntFld(b++);
 				int page_no = tuple1.getIntFld(b++);
 
-				NID nid = new NID(new PageId(page_no), slot_no);
-				bp.setIntFld(a + 1, nid);
-
+				LID lid = new LID(new PageId(page_no), slot_no);
+				EID eid = lid.returnEID();
+				bp.setEIDIntFld(a + 1, eid);
 			}
 			double setConfidence = tuple1.getFloFld(b);
-			bp.setConfidence(setConfidence);
+			bp.setDoubleFld(a + 1, setConfidence);
 			return bp;
 		}
 	}
