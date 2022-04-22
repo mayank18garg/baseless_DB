@@ -104,7 +104,7 @@ public class BPJoinTest {
                 Predicate = new String(str[1]);
                 Object = new String(str[2]);
                 Confidence = new String(str[3]);
-                if(Confidence.compareToIgnoreCase("null") != 0)
+                if(Confidence.compareToIgnoreCase("*") != 0)
                 {
                     confidence = Double.parseDouble(Confidence);
                 }
@@ -239,7 +239,7 @@ public class BPJoinTest {
             }
 
             /** Get the matching raw file contents**/
-            Stream s = SystemDefs.JavabaseDB.openStreamWOSort(dbname, Subject, Predicate, Object, confidence, num_of_buf);
+            Stream s = SystemDefs.JavabaseDB.openStreamWOSort(dbname, Subject, Predicate, Object, confidence);
             if(s==null) {System.out.println("Cannot open stream without sort"); return;}
             //RAW FILE GENERATION
             System.out.println("\n\n***************Printing the raw file results***************");
@@ -273,14 +273,14 @@ public class BPJoinTest {
                     FLONP[i] = FLONP_list.get(i);
                 }
                 BPTripleJoin bpjoin = new BPTripleJoin(num_of_buf, 3, newscan , FJNP, FJONO, FRSF, FRPF, FROF, FRCF, FLONP, FORS, FORO);
-                bp = bpjoin.getnext();
+                bp = bpjoin.get_next();
                 int fldcnt = 0;
                 while(bp != null)
                 {
                     bp.print();
                     fldcnt = bp.noOfFlds();
                     FIRST_JOIN_FILE.insertRecord(bp.getBPByteArray());
-                    bp = bpjoin.getnext();
+                    bp = bpjoin.get_next();
 
                 }
                 bpjoin.close();
@@ -301,13 +301,13 @@ public class BPJoinTest {
                         SLONP[i] = (Integer) SLONP_list.get(i);
                     }
                     bpjoin = new BPTripleJoin(num_of_buf, fldcnt,newscan , SJNP, SJONO, SRSF, SRPF, SROF, SRCF, SLONP, SORS, SORO);
-                    BasicPattern bp1 = bpjoin.getnext();
+                    BasicPattern bp1 = bpjoin.get_next();
                     fldCount = bp1.noOfFlds();
                     while(bp1 != null)
                     {
                         bp1.print();
                         SECOND_JOIN_FILE.insertRecord(bp1.getBPByteArray());
-                        bp1 = bpjoin.getnext();
+                        bp1 = bpjoin.get_next();
                     }
                     bpjoin.close();
                 }
@@ -326,25 +326,25 @@ public class BPJoinTest {
                         e.printStackTrace();
                     }
 
-//                    BPSort sort = null;
-//                    BPOrder order = new BPOrder(bporder);
-//                    try {
-//                        sort = new BPSort(fscan, order, node_position, num_of_sort_pages);
-//                    }
-//                    catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
+                    BPSort sort = null;
+                    BPOrder order = new BPOrder(bporder);
+                    try {
+                        sort = new BPSort(fscan, order, node_position, num_of_sort_pages);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
 
-//                    try {
-//                        while((bp = sort.get_next()) != null) {
-//                            bp.print();
-//                        }
-//                    }
-//                    catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                    System.out.println("** SORTING DONE **");
-//                    sort.close();
+                    try {
+                        while((bp = sort.get_next()) != null) {
+                            bp.print();
+                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("** SORTING DONE **");
+                    sort.close();
 
                 }
                 //CLEANUP OF THE FILES

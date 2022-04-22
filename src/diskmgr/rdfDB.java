@@ -34,7 +34,8 @@ public class rdfDB extends DB implements GlobalConst {
 	private int type; //indexoption
 
   private QuadrupleBTreeFile QuadrupleBTIndex; 	//BTree file for the index options given
-	// INDEX OPTIONS	
+  private QuadrupleBTreeFile QuadrupleBTIndexOnObject; 	//BTree file for the index options given
+	// INDEX OPTIONS
 	//(1) BTree Index file on confidence
 	//(2) BTree Index file on subject and confidence
 	//(3) BTree Index file on object and confidence
@@ -133,12 +134,11 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 
 	}
 
-	public Stream openStreamWOSort(String dbname, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter,
-							 int numbuf)
+	public Stream openStreamWOSort(String dbname, String subjectFilter, String predicateFilter, String objectFilter, double confidenceFilter)
 	{
 		Stream streamObj = null;
 		try {
-			streamObj = new Stream( dbname, subjectFilter,  predicateFilter, objectFilter, confidenceFilter, numbuf);
+			streamObj = new Stream( dbname, subjectFilter,  predicateFilter, objectFilter, confidenceFilter);
 		}
 		catch(Exception e){
 			e.printStackTrace();
@@ -978,17 +978,17 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 		try
 		{
 			//destroy existing index first
-			if(QuadrupleBTIndex != null)
+			if(QuadrupleBTIndexOnObject != null)
 			{
-				QuadrupleBTIndex.close();
-				QuadrupleBTIndex.destroyFile();
+				QuadrupleBTIndexOnObject.close();
+				QuadrupleBTIndexOnObject.destroyFile();
 				destroyIndex(dbname+"/Object_BTreeIndex");
 			}
 
 			//create new
 			int keytype = AttrType.attrString;
 			//scan sorted heap file and insert into btree index
-			QuadrupleBTIndex = new QuadrupleBTreeFile(dbname+"/Object_BTreeIndex");
+			QuadrupleBTIndexOnObject = new QuadrupleBTreeFile(dbname+"/Object_BTreeIndex");
 			QuadrupleHeap = new QuadrupleHeapfile(dbname+"/quadrupleHF");
 			EntityHeap = new LabelHeapfile(dbname+"/entityHF");
 			TScan am = new TScan(QuadrupleHeap);
@@ -1001,10 +1001,10 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 			{
 				Label object = EntityHeap.getLabel(quadruple.getObjecqid().returnLID());
 				KeyClass key = new StringKey(object.getLabel());
-				QuadrupleBTIndex.insert(key,qid);
+				QuadrupleBTIndexOnObject.insert(key,qid);
 			}
 			am.closescan();
-			QuadrupleBTIndex.close();
+			QuadrupleBTIndexOnObject.close();
 		}
 		catch(Exception e)
 		{
