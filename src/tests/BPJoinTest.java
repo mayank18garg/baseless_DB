@@ -350,7 +350,11 @@ public class BPJoinTest {
                 //CLEANUP OF THE FILES
 
                 SECOND_JOIN_FILE.deleteFile();
+
+                SystemDefs.clearBuffer();
+
             }
+
 
         }
         else
