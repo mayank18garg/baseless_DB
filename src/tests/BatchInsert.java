@@ -87,13 +87,14 @@ public class BatchInsert {
 
                 //split each line to store subject, predicate, object in respective heapfiles
                 //ip =  :Joen :knows :Eiwth		0.5232176791516268
-                strLine = strLine.replace("\t\t",":").replace(" ","").replace(":"," ").trim();
-                String[] input = strLine.split(" ");
-                if(input.length!=4){ System.out.println("skipping input " + (++inputCount)); continue;}
-                String subject = input[0].trim();
-                String predicate = input[1].trim();
-                String object = input[2].trim();
-                String confidence = input[3].trim();
+                //strLine = strLine.replace("\t\t",":").replace(" ","").replace(":"," ").trim();
+                //String[] input = strLine.split(" ");
+                String[] input = strLine.split("[\\s\\t:]");
+                if(input.length!=8){ System.out.println("skipping input " + (++inputCount)); continue;}
+                String subject = input[1].trim();
+                String predicate = input[3].trim();
+                String object = input[5].trim();
+                String confidence = input[7].trim();
                 if(subject.isEmpty() || predicate.isEmpty() || object.isEmpty() || confidence.isEmpty()){
                     System.out.println("skipping incorrect input " + (++inputCount)); continue;
                 }

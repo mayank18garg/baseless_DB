@@ -120,6 +120,23 @@ public class SystemDefs {
 		  }
     }
 
+	public static void clearBuffer(){
+
+		try
+		{
+			System.out.println ("Flushing Pages: ***************");
+			JavabaseBM.flushAllPages();
+			System.out.println("Unpinned pages: " + JavabaseBM.getNumUnpinnedBuffers());
+		}
+		catch(Exception e)
+		{
+			System.out.println ("Flushing Pages: ***************");
+			System.err.println (""+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+
+		}
+	}
     public static void close()
 	{
 		try
