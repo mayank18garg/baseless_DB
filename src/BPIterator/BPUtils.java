@@ -6,11 +6,8 @@ import heap.Tuple;
 import iterator.UnknowAttrType;
 import labelheap.Label;
 import labelheap.LabelHeapfile;
-import quadrupleheap.Quadruple;
 
 import java.io.IOException;
-
-import static iterator.TupleUtils.CompareTupleWithTuple;
 
 public class BPUtils {
 
@@ -21,7 +18,7 @@ public class BPUtils {
      * @return return 1 if q1 is greater than q2
      * return -1 if q1 is less than q2
      */
-    private static int compareTuple(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple Tuple2, int Field_no_2) throws Exception {
+    public static int compareTuple(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple Tuple2, int Field_no_2) throws Exception {
         int pid_1, sid_1, pid_2, sid_2;
 
         String t1_s, t2_s;
@@ -63,7 +60,7 @@ public class BPUtils {
 
             case AttrType.attrReal: // Compare two floats
                 double t1_real, t2_real;
-                 {
+                {
                     t1_real = Tuple1.getFloFld(Field_no_1);
                     t2_real = Tuple2.getFloFld(Field_no_2);
                 } if (t1_real == t2_real) return 0;
@@ -83,7 +80,7 @@ public class BPUtils {
     }
 
 
-    public static void SetValue(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple value) throws IOException, UnknowAttrType, FieldNumberOutOfBoundException {
+    public static void SetValue(Tuple value, Tuple Tuple1, int Field_no_1, AttrType field_type) throws IOException, UnknowAttrType, FieldNumberOutOfBoundException {
 
         switch (field_type.attrType) {
             case AttrType.attrInteger:

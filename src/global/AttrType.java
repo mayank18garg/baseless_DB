@@ -12,6 +12,7 @@ public class AttrType {
   public static final int attrReal    = 2;
   public static final int attrSymbol  = 3;
   public static final int attrNull    = 4;
+  public static final int attrDouble  = 5;
   
   public int attrType;
 
@@ -47,6 +48,8 @@ public class AttrType {
       return "attrSymbol";
     case attrNull:
       return "attrNull";
+    case attrDouble:
+      return "attrDouble";
     }
     return ("Unexpected AttrType " + attrType);
   }

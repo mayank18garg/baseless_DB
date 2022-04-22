@@ -22,7 +22,7 @@ import java.io.IOException;
 
 /**
  *All the relational operators and access methods are iterators.
- */
+*/
 public abstract class BPIterator implements Flags {
   
   /**
@@ -36,55 +36,55 @@ public abstract class BPIterator implements Flags {
 
   /**
    *abstract method, every subclass must implement it.
-   *@return the result tuple
-   *@exception IOException I/O errors
-   *@exception JoinsException some join exception
-   *@exception IndexException exception from super class    
-   *@exception InvalidTupleSizeException invalid tuple size
-   *@exception InvalidTypeException tuple type not valid
-   *@exception PageNotReadException exception from lower layer
-   *@exception TupleUtilsException exception from using tuple utilities
-   *@exception PredEvalException exception from PredEval class
-   *@exception SortException sort exception
-   *@exception LowMemException memory error
-   *@exception UnknowAttrType attribute type unknown
-   *@exception UnknownKeyTypeException key type unknown
-   *@exception Exception other exceptions
-   */
-  public abstract BasicPattern getnext()
+  *@return the result tuple
+  *@exception IOException I/O errors
+  *@exception JoinsException some join exception
+  *@exception IndexException exception from super class    
+  *@exception InvalidTupleSizeException invalid tuple size
+  *@exception InvalidTypeException tuple type not valid
+  *@exception PageNotReadException exception from lower layer
+  *@exception TupleUtilsException exception from using tuple utilities
+  *@exception PredEvalException exception from PredEval class
+  *@exception SortException sort exception
+  *@exception LowMemException memory error
+  *@exception UnknowAttrType attribute type unknown
+  *@exception UnknownKeyTypeException key type unknown
+  *@exception Exception other exceptions
+  */
+  public abstract BasicPattern get_next()
     throws IOException,
-	   JoinsException ,
-	   IndexException,
-	   InvalidTupleSizeException,
-	   InvalidTypeException, 
-	   PageNotReadException,
-	   TupleUtilsException, 
-	   PredEvalException,
-	   SortException,
-	   LowMemException,
-	   UnknowAttrType,
-	   UnknownKeyTypeException,
-	   Exception;
+    JoinsException ,
+    IndexException,
+    InvalidTupleSizeException,
+    InvalidTypeException, 
+    PageNotReadException,
+    TupleUtilsException, 
+    PredEvalException,
+    SortException,
+    LowMemException,
+    UnknowAttrType,
+    UnknownKeyTypeException,
+    Exception;
 
   /**
    *@exception IOException I/O errors
-   *@exception JoinsException some join exception
-   *@exception IndexException exception from Index class
-   *@exception SortException exception Sort class
-   */
+  *@exception JoinsException some join exception
+  *@exception IndexException exception from Index class
+  *@exception SortException exception Sort class
+  */
   public abstract void close() 
     throws IOException, 
-	   JoinsException, 
-	   SortException,
-	   IndexException;
+    JoinsException, 
+    SortException,
+    IndexException;
   
   /**
    * tries to get n_pages of buffer space
    *@param n_pages the number of pages
-   *@param PageIds the corresponding PageId for each page
-   *@param bufs the buffer space
-   *@exception IteratorBMException exceptions from bufmgr layer
-   */
+  *@param PageIds the corresponding PageId for each page
+  *@param bufs the buffer space
+  *@exception IteratorBMException exceptions from bufmgr layer
+  */
   public void  get_buffer_pages(int n_pages, PageId[] PageIds, byte[][] bufs)
     throws IteratorBMException
     {
@@ -92,28 +92,28 @@ public abstract class BPIterator implements Flags {
       PageId pgid = null;
       
       for(int i=0; i < n_pages; i++) {
-	pgptr.setpage(bufs[i]);
+  pgptr.setpage(bufs[i]);
 
-	pgid = newPage(pgptr,1);
-	PageIds[i] = new PageId(pgid.pid);
-	
-	bufs[i] = pgptr.getpage();
-	
+  pgid = newPage(pgptr,1);
+  PageIds[i] = new PageId(pgid.pid);
+  
+  bufs[i] = pgptr.getpage();
+  
       }
     }
 
   /**
    *free all the buffer pages we requested earlier.
-   * should be called in the destructor
-   *@param n_pages the number of pages
-   *@param PageIds  the corresponding PageId for each page
-   *@exception IteratorBMException exception from bufmgr class 
-   */
+  * should be called in the destructor
+  *@param n_pages the number of pages
+  *@param PageIds  the corresponding PageId for each page
+  *@exception IteratorBMException exception from bufmgr class 
+  */
   public void free_buffer_pages(int n_pages, PageId[] PageIds) 
     throws IteratorBMException
     {
       for (int i=0; i<n_pages; i++) {
-	freePage(PageIds[i]);
+  freePage(PageIds[i]);
       }
     }
 
