@@ -239,7 +239,7 @@ public class BPJoinTest {
             }
 
             /** Get the matching raw file contents**/
-            Stream s = SystemDefs.JavabaseDB.openStreamWOSort(dbname, Subject, Predicate, Object, confidence, num_of_buf);
+            Stream s = SystemDefs.JavabaseDB.openStreamWOSort(dbname, Subject, Predicate, Object, confidence);
             if(s==null) {System.out.println("Cannot open stream without sort"); return;}
             //RAW FILE GENERATION
             System.out.println("\n\n***************Printing the raw file results***************");
