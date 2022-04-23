@@ -302,7 +302,7 @@ public class BPJoinTest {
                     }
                     bpjoin = new BPTripleJoin(num_of_buf, fldcnt,newscan , SJNP, SJONO, SRSF, SRPF, SROF, SRCF, SLONP, SORS, SORO);
                     BasicPattern bp1 = bpjoin.getnext();
-                    fldCount = bp1.noOfFlds();
+                    // fldCount = bp1.noOfFlds();
                     while(bp1 != null)
                     {
                         bp1.print();
