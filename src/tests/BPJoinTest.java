@@ -104,7 +104,7 @@ public class BPJoinTest {
                 Predicate = new String(str[1]);
                 Object = new String(str[2]);
                 Confidence = new String(str[3]);
-                if(Confidence.compareToIgnoreCase("null") != 0)
+                if(Confidence.compareToIgnoreCase("*") != 0)
                 {
                     confidence = Double.parseDouble(Confidence);
                 }
