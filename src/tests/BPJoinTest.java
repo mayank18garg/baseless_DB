@@ -1,20 +1,15 @@
 package tests;
 
+import BPIterator.*;
 import diskmgr.*;
 import global.*;
 import heap.*;
-import iterator.FileScan;
-import iterator.Sort;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
-import java.util.StringTokenizer;
-
 import quadrupleheap.*;
-import labelheap.*;
-import BPIterator.*;
+
+
 
 
 public class BPJoinTest {
@@ -30,7 +25,7 @@ public class BPJoinTest {
     static EID entitypredicateid = new EID();
     static QuadrupleHeapfile UNSORTED_QUADS = null;
     boolean exists = false;
-    public static double confidence = -99.0;
+    public static double confidence = 0;
     public static int num_of_buf = 200;
 
     public static String queryfile = null;
@@ -100,9 +95,9 @@ public class BPJoinTest {
             if(str.length == 4)
             {
 
-                Subject = new String(str[0]);
-                Predicate = new String(str[1]);
-                Object = new String(str[2]);
+                Subject = str[0].compareTo("*") != 0 ? new String(str[0]) : null;
+                Predicate = str[1].compareTo("*") != 0 ? new String(str[1]) : null;
+                Object = str[2].compareTo("*") != 0 ? new String(str[2]) : null;
                 Confidence = new String(str[3]);
                 if(Confidence.compareToIgnoreCase("*") != 0)
                 {
@@ -112,21 +107,26 @@ public class BPJoinTest {
             }
             else
             {
-                System.out.println("***ERROR in query file format***");
+                System.out.println("***ERROR in query file format 0***");
                 return ;
             }
 
             str = tokens[4].split(delims); //,JNP,JONO,RSF,RPF,ROF,RCF,LONP,ORS,ORO
+            System.out.println(str.length);
+            for(int i=0;i<str.length;i++)
+            {
+                str[i] = str[i].trim();
+            }
             if(str.length == 10)
             {
                 int i = 0;
                 FJNP = Integer.parseInt(str[1]);
                 FJONO = Integer.parseInt(str[2]);
-                FRSF = new String(str[3]);
-                FRPF = new String(str[4]);
-                FROF = new String(str[5]);
+                FRSF = str[3].compareTo("*") != 0 ? new String(str[3]) : "null";
+                FRPF = str[4].compareTo("*") != 0? new String(str[4]):"null";
+                FROF = str[5].compareTo("*") != 0 ? new String(str[5]) : "null";
 
-                if(str[6].compareTo("null") != 0)
+                if(str[6].compareTo("*") != 0)
                 {
                     FRCF = Double.parseDouble(str[6]);
                 }
@@ -145,20 +145,24 @@ public class BPJoinTest {
             }
             else
             {
-                System.out.println("***ERROR in query file format***");
+                System.out.println("***ERROR in query file format 1***");
                 return ;
             }
 
             str = tokens[5].split(delims); //,JNP,JONO,RSF,RPF,ROF,RCF,LONP,ORS,ORO
+            for(int i=0;i<str.length;i++)
+            {
+                str[i] = str[i].trim();
+            }
             if(str.length == 10)
             {
                 int i = 0;
                 SJNP = Integer.parseInt(str[1]);
                 SJONO = Integer.parseInt(str[2]);
-                SRSF = new String(str[3]);
-                SRPF = new String(str[4]);
-                SROF = new String(str[5]);
-                if(str[6].compareTo("null") != 0)
+                SRSF = str[3].compareTo("*") != 0 ? new String(str[3]) : "null";
+                SRPF = str[4].compareTo("*") != 0? new String(str[4]):"null";
+                SROF = str[5].compareTo("*") != 0 ? new String(str[5]) : "null";
+                if(str[6].compareTo("*") != 0)
                 {
                     SRCF = Double.parseDouble(str[6]);
                 }
@@ -176,7 +180,7 @@ public class BPJoinTest {
             }
             else
             {
-                System.out.println("***ERROR in query file format***");
+                System.out.println("***ERROR in query file format 2***");
                 return ;
             }
 
@@ -192,7 +196,7 @@ public class BPJoinTest {
         }
         else
         {
-            System.out.println("***ERROR in query file format***");
+            System.out.println("***ERROR in query file format 3***");
             return ;
         }
 
@@ -246,6 +250,7 @@ public class BPJoinTest {
             Heapfile RAW_BP_FILE = new Heapfile("RAW_BP_FILE");
             BasicPattern bp = null;
             QID tid = null;
+            System.out.println(s.getNextBasicPatternFromTriple(tid));
             while((bp = s.getNextBasicPatternFromTriple(tid))!=null)
             {
                 bp.print();
@@ -285,7 +290,7 @@ public class BPJoinTest {
                 }
                 bpjoin.close();
 
-                RAW_BP_FILE.deleteFile();
+                //RAW_BP_FILE.deleteFile();
                 System.out.println(fldcnt);
 
                 //SECOND JOIN OPERATION
@@ -301,8 +306,8 @@ public class BPJoinTest {
                         SLONP[i] = (Integer) SLONP_list.get(i);
                     }
                     bpjoin = new BPTripleJoin(num_of_buf, fldcnt,newscan , SJNP, SJONO, SRSF, SRPF, SROF, SRCF, SLONP, SORS, SORO);
-                    BasicPattern bp1 = bpjoin.get_next();
-                    // fldCount = bp1.noOfFlds();
+                    BasicPattern bp1 = bpjoin.getnext();
+                    //fldCount = bp1.noOfFlds();
                     while(bp1 != null)
                     {
                         bp1.print();
@@ -313,7 +318,7 @@ public class BPJoinTest {
                 }
 
                 FIRST_JOIN_FILE.deleteFile();
-                System.out.println(fldCount);
+                //System.out.println(fldCount);
                 //SORT
                 if(SECOND_JOIN_FILE.getRecCnt() > 0)
                 {
