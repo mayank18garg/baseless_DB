@@ -1,106 +1,178 @@
 package BPIterator;
 
+
+import heap.*;
 import global.*;
-import heap.FieldNumberOutOfBoundException;
-import heap.Tuple;
-import iterator.TupleUtilsException;
-import iterator.UnknowAttrType;
-import labelheap.Label;
-import labelheap.LabelHeapfile;
-import quadrupleheap.Quadruple;
 
-import java.io.IOException;
+import java.io.*;
+import labelheap.*;
+import heap.*;
+/**
+ *some useful method when processing Tuple 
+ */
+public class BPUtils
+{
+  
+  /**
+   * This function compares a tuple with another tuple in respective field, and
+   *  returns:
+   *
+   *    0        if the two are equal,
+   *    1        if the tuple is greater,
+   *   -1        if the tuple is smaller,
+   *
+   *@param    fldType   the type of the field being compared.
+   *@param    t1        one tuple.
+   *@param    t2        another tuple.
+   *@param    t1_fld_no the field numbers in the tuples to be compared.
+   *@param    t2_fld_no the field numbers in the tuples to be compared. 
+   *@exception TupleUtilsException exception from this class
+   *@return   0        if the two are equal,
+   *          1        if the tuple is greater,
+   *         -1        if the tuple is smaller,                              
+ * @throws Exception 
+ * @throws LHFBufMgrException 
+ * @throws LHFDiskMgrException 
+ * @throws LHFException 
+ * @throws InvalidLabelSizeException 
+ * @throws InvalidSlotNumberException 
+   */
+  public static int CompareTupleWithTuple(AttrType fldType,
+					  Tuple  t1, int t1_fld_no,
+					  Tuple  t2, int t2_fld_no)
+    throws InvalidSlotNumberException, Exception
+    {
+	int t1_epid, t1_esid,
+	    t2_epid, t2_esid;
+      	double t1_r,  t2_r;
+	String t1_s, t2_s;
+    char[] c_min = new char[1];
+    c_min[0] = Character.MIN_VALUE; 
+    String s_min = new String(c_min);
+    char[] c_max = new char[1];
+    c_max[0] = Character.MAX_VALUE; 
+    String s_max = new String(c_max);
+    LabelHeapfile Elhf = SystemDefs.JavabaseDB.getEntityHandle();
 
-import static iterator.TupleUtils.CompareTupleWithTuple;
-
-public class BPUtils {
-
-    /**
-     * compare quadruples based on the subject value
-     *
-     *
-     * @return return 1 if q1 is greater than q2
-     * return -1 if q1 is less than q2
-     */
-    public static int compareTuple(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple Tuple2, int Field_no_2) throws Exception {
-        int pid_1, sid_1, pid_2, sid_2;
-
-        String t1_s, t2_s;
-        char compare_min[] = new char[1];
-        char compare_max[] = new char[1];
-        compare_min[0] = Character.MIN_VALUE;
-        compare_max[0] = Character.MAX_VALUE;
-        String string_min = new String(compare_min);
-        String string_max = new String(compare_max);
-        LabelHeapfile entity_label_Heap = SystemDefs.JavabaseDB.getEntityHandle();
-
-        switch (field_type.attrType) {
-            case AttrType.attrInteger:                // Compare two integers.
-                {
-                    sid_1 = Tuple1.getIntFld(Field_no_1);
-                    pid_1 = Tuple1.getIntFld(Field_no_1 + 1);
-                    sid_2 = Tuple2.getIntFld(Field_no_2);
-                    pid_2 = Tuple2.getIntFld(Field_no_2 + 1);
-                    PageId p_pid_1 = new PageId(pid_1);
-                    PageId p_pid_2 = new PageId(pid_2);
-                    LID lid_1 = new LID(p_pid_1, sid_1);
-                    LID lid_2 = new LID(p_pid_2, sid_2);
-                    Label entity1, entity2;
-                    if (lid_1.pageNo.pid < 0) return -1;
-                    else if (lid_1.pageNo.pid == Integer.MAX_VALUE) return 1;
-                    else {
-                        entity1 = entity_label_Heap.getLabel(lid_1);              // Comparing Entities
-                        t1_s = entity1.getLabel();
-                    }
-                    if (lid_2.pageNo.pid < 0) return 1;
-                    else if (lid_2.pageNo.pid == Integer.MAX_VALUE) return -1;
-                    else {
-                        entity2 = entity_label_Heap.getLabel(lid_2);
-                        t2_s = entity2.getLabel();
-                    }
-                } if (t1_s.compareTo(t2_s) > 0) return 1;
-                if (t1_s.compareTo(t2_s) < 0) return -1;
+      switch (fldType.attrType) 
+	{
+	case AttrType.attrInteger:                // Compare two integers.
+	  try {
+		t1_esid = t1.getIntFld(t1_fld_no);
+		t1_epid = t1.getIntFld(t1_fld_no+1);
+		t2_esid = t2.getIntFld(t2_fld_no);
+		t2_epid = t2.getIntFld(t2_fld_no+1);
+		PageId t1_pid = new PageId(t1_epid);
+		PageId t2_pid = new PageId(t2_epid);
+		LID t1_lid = new LID(t1_pid,t1_esid);
+		LID t2_lid = new LID(t2_pid,t2_esid);
+		Label S1, S2;
+                if(t1_lid.pageNo.pid<0)   			t1_s = new String(s_min);
+		else if(t1_lid.pageNo.pid==Integer.MAX_VALUE)   t1_s = new String(s_max);
+                else {
+                        S1 = Elhf.getLabel(t1_lid);              // Comparing Entities
+                        t1_s = S1.getLabel();
+                }
+                if(t2_lid.pageNo.pid<0)   			t2_s = new String(s_min);
+		else if(t2_lid.pageNo.pid==Integer.MAX_VALUE)  	t2_s = new String(s_max);
+                else {
+                        S2 = Elhf.getLabel(t2_lid);
+                        t2_s = S2.getLabel();
+                } 
+	  	}catch (FieldNumberOutOfBoundException e){
+	    		throw new BasicPatternUtilsException(e, "FieldNumberOutOfBoundException is caught by TupleUtils.java");
+	  	}
+                if (t1_s.compareTo( t2_s)>0)return 1;
+                if (t1_s.compareTo( t2_s)<0)return -1;
                 return 0;
 
-            case AttrType.attrReal: // Compare two floats
-                double t1_real, t2_real;
-                 {
-                    t1_real = Tuple1.getFloFld(Field_no_1);
-                    t2_real = Tuple2.getFloFld(Field_no_2);
-                } if (t1_real == t2_real) return 0;
-                if (t1_real < t2_real) return -1;
-                if (t1_real > t2_real) return 1;
-
-            default:
-
-                throw new UnknowAttrType(null, "Don't know how to handle attrSymbol, attrNull");
-
-        }
+	case AttrType.attrReal:                // Compare two floats
+	  try {
+	    t1_r = t1.getFloFld(t1_fld_no);
+	    t2_r = t2.getFloFld(t2_fld_no);
+	  }catch (FieldNumberOutOfBoundException e){
+	    throw new BasicPatternUtilsException(e, "FieldNumberOutOfBoundException is caught by TupleUtils.java");
+	  }
+	  if (t1_r == t2_r) return  0;
+	  if (t1_r <  t2_r) return -1;
+	  if (t1_r >  t2_r) return  1;
+	  
+	default:
+	  
+	  throw new UnknowAttrType(null, "Don't know how to handle attrSymbol, attrNull");
+	  
+	}
     }
-
-
-    public static int CompareTupleWithValue(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple value)
-            throws UnknowAttrType, IOException, TupleUtilsException {
-        return CompareTupleWithTuple(field_type, Tuple1, Field_no_1, value, Field_no_1);
+  
+  
+  
+  /**
+   * This function  compares  tuple1 with another tuple2 whose
+   * field number is same as the tuple1
+   *
+   *@param    fldType   the type of the field being compared.
+   *@param    t1        one tuple
+   *@param    value     another tuple.
+   *@param    t1_fld_no the field numbers in the tuples to be compared.  
+   *@return   0        if the two are equal,
+   *          1        if the tuple is greater,
+   *         -1        if the tuple is smaller,  
+ * @throws Exception 
+ * @throws LHFBufMgrException 
+ * @throws LHFDiskMgrException 
+ * @throws LHFException 
+ * @throws InvalidLabelSizeException 
+ * @throws InvalidSlotNumberException 
+   *@exception TupleUtilsException exception from this class   
+   */            
+  public static int CompareTupleWithValue(AttrType fldType,
+					  Tuple  t1, int t1_fld_no,
+					  Tuple  value)
+    throws InvalidSlotNumberException, Exception
+    {
+      return CompareTupleWithTuple(fldType, t1, t1_fld_no, value, t1_fld_no);
     }
-
-
-    public static void SetValue(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple value) throws IOException, UnknowAttrType, FieldNumberOutOfBoundException {
-
-        switch (field_type.attrType) {
-            case AttrType.attrInteger:
-                value.setIntFld(Field_no_1, Tuple1.getIntFld(Field_no_1));
-                value.setIntFld(Field_no_1 + 1, Tuple1.getIntFld(Field_no_1 + 1));
-                break;
-            case AttrType.attrReal:
-
-                value.setFloFld(Field_no_1, Tuple1.getFloFld(Field_no_1));
-                break;
-            default:
-                throw new UnknowAttrType(null, "Don't know how to handle attrSymbol, attrNull");
-
-        }
-
-        return;
+  
+ 
+  /**
+   *set up a tuple in specified field from a tuple
+   *@param value the tuple to be set 
+   *@param tuple the given tuple
+   *@param fld_no the field number
+   *@param fldType the tuple attr type
+   *@exception UnknowAttrType don't know the attribute type
+   *@exception IOException some I/O fault
+   *@exception TupleUtilsException exception from this class
+   */  
+  public static void SetValue(Tuple value, Tuple  tuple, int fld_no, AttrType fldType)
+    throws IOException,
+	   UnknowAttrType,
+	   BasicPatternUtilsException
+    {
+      
+      switch (fldType.attrType)
+	{
+	case AttrType.attrInteger:
+	  try {
+	    value.setIntFld(fld_no, tuple.getIntFld(fld_no));
+	    value.setIntFld(fld_no+1, tuple.getIntFld(fld_no+1));
+	  }catch (FieldNumberOutOfBoundException e){
+	    throw new BasicPatternUtilsException(e, "FieldNumberOutOfBoundException is caught by TupleUtils.java");
+	  }
+	  break;
+	case AttrType.attrReal:
+	  try {
+	    value.setFloFld(fld_no, tuple.getFloFld(fld_no));
+	  }catch (FieldNumberOutOfBoundException e){
+	    throw new BasicPatternUtilsException(e, "FieldNumberOutOfBoundException is caught by TupleUtils.java");
+	  }
+	  break;
+	default:
+	  throw new UnknowAttrType(null, "Don't know how to handle attrSymbol, attrNull");
+	  
+	}
+      
+      return;
     }
 }
+  
