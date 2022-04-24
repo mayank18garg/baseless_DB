@@ -155,8 +155,8 @@ public class BatchInsert {
 
             sysdef.JavabaseDB.createIndex(indexoption);
             System.out.println("Create Btree index on subject, object and composite index on Subject+Predicate+Object+Confidence");
-            sysdef.JavabaseDB.createIndex5();
-            sysdef.JavabaseDB.createIndexOnObject();
+            // sysdef.JavabaseDB.createIndex5();
+            // sysdef.JavabaseDB.createIndexOnObject();
 
 
 
