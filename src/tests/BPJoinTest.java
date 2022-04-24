@@ -36,7 +36,7 @@ public class BPJoinTest {
     public static String queryfile = null;
     public static int FJNP = 0, SJNP =0, FJONO = 0, SJONO = 0, FORS = 0, SORS = 0, FORO=0,SORO=0;
     public static String FRSF=null,SRSF=null,FRPF=null,SRPF=null,FROF=null,SROF=null;
-    public static double FRCF = -99.0,SRCF = -99.0;
+    public static double FRCF = 0.0,SRCF = 0.0;
     public static int[] FLONP = null, SLONP = null;
     public static List<Integer> SLONP_list = new ArrayList<Integer>();
     public static List<Integer> FLONP_list = new ArrayList<Integer>();
@@ -116,77 +116,104 @@ public class BPJoinTest {
                 return ;
             }
 
-            str = tokens[4].split(delims); //,JNP,JONO,RSF,RPF,ROF,RCF,LONP,ORS,ORO
-            System.out.println(str.length);
-            for(int i=0;i<str.length;i++)
-            {
-                str[i] = str[i].trim();
-            }
-            if(str.length == 10)
-            {
-                int i = 0;
-                FJNP = Integer.parseInt(str[1]);
-                FJONO = Integer.parseInt(str[2]);
-                FRSF = str[3].compareTo("*") != 0 ? new String(str[3]) : "null";
-                FRPF = str[4].compareTo("*") != 0? new String(str[4]):"null";
-                FROF = str[5].compareTo("*") != 0 ? new String(str[5]) : "null";
-
-                if(str[6].compareTo("*") != 0)
-                {
-                    FRCF = Double.parseDouble(str[6]);
+            String[] getLONP = tokens[4].split("[{}]"); //,JNP,JONO,RSF,RPF,ROF,RCF,LONP,ORS,ORO
+            System.out.println(tokens[4]);
+            if(getLONP.length == 3) {
+                //,JNP,JONO,RSF,RPF,ROF,RCF,
+                str = getLONP[0].split(delims);
+                for (int i = 0; i < str.length; i++) {
+                    str[i] = str[i].trim();
                 }
 
-                String[] lonp_str = str[7].split(":");
-                for(String lonp:lonp_str)
-                {
+                if (str.length == 7) {
+                    int i = 0;
+                    FJNP = Integer.parseInt(str[1]);
+                    FJONO = Integer.parseInt(str[2]);
+                    FRSF = str[3].compareTo("*") != 0 ? new String(str[3]) : "null";
+                    FRPF = str[4].compareTo("*") != 0 ? new String(str[4]) : "null";
+                    FROF = str[5].compareTo("*") != 0 ? new String(str[5]) : "null";
+
+                    if (str[6].compareTo("*") != 0) {
+                        FRCF = Double.parseDouble(str[6]);
+                    }
+
+                } else {
+                    System.out.println("***ERROR in query file format 1.1***");
+                    return;
+                }
+
+                //LONP first
+                String[] lonp_str = getLONP[1].split(delims);
+
+                for (String lonp : lonp_str) {
                     FLONP_list.add(Integer.parseInt(lonp));
-                    i++;
                 }
 
-                FORS = Integer.parseInt(str[8]);
-                FORO = Integer.parseInt(str[9]);
+                //ORS,ORO
+                str = getLONP[2].split(delims);
+                for (int i = 0; i < str.length; i++) {
+                    str[i] = str[i].trim();
+                }
+                if (str.length == 3) {
+                    FORS = Integer.parseInt(str[1]);
+                    FORO = Integer.parseInt(str[2]);
+                    System.out.println(FJNP + " " + FJONO + " " + FRSF + " " + FRPF + " " + FRCF + " " + FORS + " " + FORO);
+                } else {
+                    System.out.println("***ERROR in query file format 1.2***");
+                    return;
+                }
+            }else{
+                System.out.println("***ERROR in query file format first join***");
+                return;
+            }
+            //***************second join
+            getLONP = tokens[5].split("[{}]"); //,JNP,JONO,RSF,RPF,ROF,RCF,LONP,ORS,ORO
+            //System.out.println(str.length);
+            if(getLONP.length == 3) {
+                //,JNP,JONO,RSF,RPF,ROF,RCF,
+                str = getLONP[0].split(delims);
+                for (int i = 0; i < str.length; i++) {
+                    str[i] = str[i].trim();
+                }
+                if (str.length == 7) {
+                    SJNP = Integer.parseInt(str[1]);
+                    SJONO = Integer.parseInt(str[2]);
+                    SRSF = str[3].compareTo("*") != 0 ? new String(str[3]) : "null";
+                    SRPF = str[4].compareTo("*") != 0? new String(str[4]):"null";
+                    SROF = str[5].compareTo("*") != 0 ? new String(str[5]) : "null";
+                    if(str[6].compareTo("*") != 0)
+                    {
+                        SRCF = Double.parseDouble(str[6]);
+                    }
 
-                System.out.println(FJNP+ " " + FJONO + " " + FRSF + " "+ FRPF + " "+ FRCF + " "+ FORS + " " + FORO);
-            }
-            else
-            {
-                System.out.println("***ERROR in query file format 1***");
-                return ;
-            }
-
-            str = tokens[5].split(delims); //,JNP,JONO,RSF,RPF,ROF,RCF,LONP,ORS,ORO
-            for(int i=0;i<str.length;i++)
-            {
-                str[i] = str[i].trim();
-            }
-            if(str.length == 10)
-            {
-                int i = 0;
-                SJNP = Integer.parseInt(str[1]);
-                SJONO = Integer.parseInt(str[2]);
-                SRSF = str[3].compareTo("*") != 0 ? new String(str[3]) : "null";
-                SRPF = str[4].compareTo("*") != 0? new String(str[4]):"null";
-                SROF = str[5].compareTo("*") != 0 ? new String(str[5]) : "null";
-                if(str[6].compareTo("*") != 0)
-                {
-                    SRCF = Double.parseDouble(str[6]);
+                } else {
+                    System.out.println("***ERROR in query file format 2.1***");
+                    return;
                 }
 
-                String[] lonp_str = str[7].split(":");
-                for(String lonp:lonp_str)
-                {
+                //LONP first
+                String[] lonp_str = getLONP[1].split(delims);
+
+                for (String lonp : lonp_str) {
                     SLONP_list.add(Integer.parseInt(lonp));
-                    i++;
                 }
-                SORS = Integer.parseInt(str[8]);
-                SORO = Integer.parseInt(str[9]);
 
-                System.out.println(SJNP+ " " + SJONO + " " + SRSF + " "+ SRPF + " "+ SRCF + " "+ SORS + " " + SORO);
-            }
-            else
-            {
-                System.out.println("***ERROR in query file format 2***");
-                return ;
+                //ORS,ORO
+                str = getLONP[2].split(delims);
+                for (int i = 0; i < str.length; i++) {
+                    str[i] = str[i].trim();
+                }
+                if (str.length == 3) {
+                    SORS = Integer.parseInt(str[1]);
+                    SORO = Integer.parseInt(str[2]);
+                    System.out.println(SJNP+ " " + SJONO + " " + SRSF + " "+ SRPF + " "+ SRCF + " "+ SORS + " " + SORO);
+                } else {
+                    System.out.println("***ERROR in query file format 2.2***");
+                    return;
+                }
+            }else{
+                System.out.println("***ERROR in query file format second join***");
+                return;
             }
 
             str = tokens[6].split(delims);
@@ -281,7 +308,10 @@ public class BPJoinTest {
                 for(int i = 0; i < FLONP_list.size(); i++)
                 {
                     FLONP[i] = FLONP_list.get(i);
+                    System.out.println("flonp " + FLONP[i]);
+
                 }
+
                 BPTripleJoin bpjoin = new BPTripleJoin(num_of_buf, 3, newscan , FJNP, FJONO, FRSF, FRPF, FROF, FRCF, FLONP, FORS, FORO);
                 bp = bpjoin.get_next();
                 int fldcnt = 0;
