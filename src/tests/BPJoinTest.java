@@ -281,7 +281,7 @@ public class BPJoinTest {
             while((bp = s.getNextBasicPatternFromTriple(tid))!=null)
             {
                 bp.print();
-                RAW_BP_FILE.insertRecord(bp.getBPByteArray());
+                RAW_BP_FILE.insertRecord(bp.getTuplefromBasicPattern().getTupleByteArray());
             }
             if(s!=null)
             {
@@ -314,13 +314,13 @@ public class BPJoinTest {
                 {
                     bp.print();
                     fldcnt = bp.noOfFlds();
-                    FIRST_JOIN_FILE.insertRecord(bp.getBPByteArray());
+                    FIRST_JOIN_FILE.insertRecord(bp.getTuplefromBasicPattern().getTupleByteArray());
                     bp = bpjoin.getnext();
 
                 }
                 bpjoin.close();
 
-                //RAW_BP_FILE.deleteFile();
+                RAW_BP_FILE.deleteFile();
                 System.out.println(fldcnt);
 
                 //SECOND JOIN OPERATION
@@ -337,7 +337,7 @@ public class BPJoinTest {
                     }
                     bpjoin = new BPTripleJoin(num_of_buf, fldcnt,newscan , SJNP, SJONO, SRSF, SRPF, SROF, SRCF, SLONP, SORS, SORO);
                     BasicPattern bp1 = bpjoin.getnext();
-                    //fldCount = bp1.noOfFlds();
+                    fldCount = bp1.noOfFlds();
                     while(bp1 != null)
                     {
                         bp1.print();
