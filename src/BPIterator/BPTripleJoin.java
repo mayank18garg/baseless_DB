@@ -241,7 +241,7 @@ public class BPTripleJoin extends BPIterator {
             while ((inner_quadruple = inner_stream.getNextWTSort(qid)) != null) {
                 ArrayList<EID> arrEID = new ArrayList<EID>();
                 double confidence = inner_quadruple.getConfidence();
-                EID eid_o = outer_tuple.getEID(BPJoinNodePosition);
+                EID eid_o = outer_tuple.getEID(BPJoinNodePosition+1);
                 EID eid_i;
                 if (JoinOnSubjectorObject == 0)
                     eid_i = inner_quadruple.getSubjecqid();
@@ -255,7 +255,7 @@ public class BPTripleJoin extends BPIterator {
                 if (eid_o.equals(eid_i)) {
                     BasicPattern bp = new BasicPattern();
                     for (int j = 0; j < LeftOutNodePosition.length; j++) {
-                        arrEID.add(outer_tuple.getEID(LeftOutNodePosition[j]));
+                        arrEID.add(outer_tuple.getEID(LeftOutNodePosition[j]+1));
                     }
                     if (OutputRightSubject == 1 && JoinOnSubjectorObject == 0) {
                         boolean isPresent = false;
