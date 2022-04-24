@@ -34,6 +34,7 @@ public class rdfDB extends DB implements GlobalConst {
 	private int type; //indexoption
 
   private QuadrupleBTreeFile QuadrupleBTIndex; 	//BTree file for the index options given
+  private QuadrupleBTreeFile QuadrupleBTIndexOnSub; 	//BTree file for the index options given
   private QuadrupleBTreeFile QuadrupleBTIndexOnObject; 	//BTree file for the index options given
 	// INDEX OPTIONS
 	//(1) BTree Index file on confidence
@@ -106,6 +107,16 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 			if(QuadrupleBTIndex != null)
 			{
 				QuadrupleBTIndex.close();
+
+			}
+			if(QuadrupleBTIndexOnObject != null)
+			{
+				QuadrupleBTIndexOnObject.close();
+
+			}
+			if(QuadrupleBTIndexOnSub != null)
+			{
+				QuadrupleBTIndexOnSub.close();
 
 			}
 			if(TEMPQuadHF != null && TEMPQuadHF != getQuadrupleHandle())
@@ -270,6 +281,30 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 		{
 			QuadrupleBTIndex = new QuadrupleBTreeFile(dbname+"/Quadruple_BTreeIndex",keytype,255,1);
 			QuadrupleBTIndex.close();
+			// createIndex(type);
+		}
+		catch(Exception e)
+		{
+			System.err.println ("Error: B tree index cannot be created"+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+		try
+		{
+			QuadrupleBTIndexOnSub = new QuadrupleBTreeFile(dbname+"/Subject_BTreeIndex",keytype,255,1);
+			QuadrupleBTIndexOnSub.close();
+			// createIndex(type);
+		}
+		catch(Exception e)
+		{
+			System.err.println ("Error: B tree index cannot be created"+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+		try
+		{
+			QuadrupleBTIndexOnObject = new QuadrupleBTreeFile(dbname+"/Object_BTreeIndex",keytype,255,1);
+			QuadrupleBTIndexOnObject.close();
 			// createIndex(type);
 		}
 		catch(Exception e)
@@ -936,17 +971,17 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 		try
 		{
 			//destroy existing index first
-			if(QuadrupleBTIndex != null)
+			if(QuadrupleBTIndexOnSub != null)
 			{
-				QuadrupleBTIndex.close();
-				QuadrupleBTIndex.destroyFile();
-				destroyIndex(dbname+"/Quadruple_BTreeIndex");
+				QuadrupleBTIndexOnSub.close();
+				QuadrupleBTIndexOnSub.destroyFile();
+				destroyIndex(dbname+"/Subject_BTreeIndex");
 			}
 
 			//create new
 			int keytype = AttrType.attrString;
 			//scan sorted heap file and insert into btree index
-			QuadrupleBTIndex = new QuadrupleBTreeFile(dbname+"/Quadruple_BTreeIndex");
+			QuadrupleBTIndexOnSub = new QuadrupleBTreeFile(dbname+"/Subject_BTreeIndex");
 			QuadrupleHeap = new QuadrupleHeapfile(dbname+"/quadrupleHF");
 			EntityHeap = new LabelHeapfile(dbname+"/entityHF");
 			TScan am = new TScan(QuadrupleHeap);
@@ -959,10 +994,10 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 			{
 				Label subject = EntityHeap.getLabel(quadruple.getSubjecqid().returnLID());
 				KeyClass key = new StringKey(subject.getLabel());
-				QuadrupleBTIndex.insert(key,qid);
+				QuadrupleBTIndexOnSub.insert(key,qid);
 			}
 			am.closescan();
-			QuadrupleBTIndex.close();
+			QuadrupleBTIndexOnSub.close();
 		}
 		catch(Exception e)
 		{
