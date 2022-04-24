@@ -341,7 +341,7 @@ public class BPJoinTest {
                     while(bp1 != null)
                     {
                         bp1.print();
-                        SECOND_JOIN_FILE.insertRecord(bp1.getBPByteArray());
+                        SECOND_JOIN_FILE.insertRecord(bp1.getTuplefromBasicPattern().getTupleByteArray());
                         bp1 = bpjoin.getnext();
                     }
                     bpjoin.close();
@@ -350,6 +350,7 @@ public class BPJoinTest {
                 FIRST_JOIN_FILE.deleteFile();
                 //System.out.println(fldCount);
                 //SORT
+                SystemDefs.clearBuffer();
                 if(SECOND_JOIN_FILE.getRecCnt() > 0)
                 {
                     System.out.println("\n\n***************Printing SORTED results***************");
