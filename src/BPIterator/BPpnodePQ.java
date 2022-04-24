@@ -3,7 +3,6 @@ package BPIterator;
 import global.*;
 import heap.*;
 import iterator.UnknowAttrType;
-import heap.*;
 import java.io.*;
 
 /**
@@ -78,7 +77,7 @@ public abstract class BPpnodePQ
      */
     public int BPpnodeCMP(BPpnode a, BPpnode b)
             throws InvalidSlotNumberException,  Exception {
-        int ans = BPUtils.compareTuple(fld_type, a.tuple, fld_no, b.tuple, fld_no);
+        int ans = BPUtils.CompareTupleWithTuple(fld_type, a.tuple, fld_no, b.tuple, fld_no);
         return ans;
     }
 
