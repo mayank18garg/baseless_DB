@@ -935,8 +935,10 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 		try
 		{
 			//destroy existing index first
-			if(QuadrupleBTIndex != null)
+			File file = new File(dbname + "/Quadruple_BTreeIndex");
+			if(QuadrupleBTIndex != null || file.exists())
 			{
+				System.out.println("Deleting the existing index btree.");
 				QuadrupleBTIndex.close();
 				QuadrupleBTIndex.destroyFile();
 				destroyIndex(dbname+"/Quadruple_BTreeIndex");
@@ -945,7 +947,7 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 			//create new
 			int keytype = AttrType.attrString;
 			//scan sorted heap file and insert into btree index
-			QuadrupleBTIndex = new QuadrupleBTreeFile(dbname+"/Quadruple_BTreeIndex");
+			QuadrupleBTIndex = new QuadrupleBTreeFile(dbname+"/Quadruple_BTreeIndex",keytype,255,1);
 			QuadrupleHeap = new QuadrupleHeapfile(dbname+"/quadrupleHF");
 			EntityHeap = new LabelHeapfile(dbname+"/entityHF");
 			TScan am = new TScan(QuadrupleHeap);
