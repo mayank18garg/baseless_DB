@@ -360,6 +360,7 @@ public class Stream {
         if (confidenceFilter == 0) {
             confidenceNull = true;
         }
+        String indexoption = rdfDBName.substring(rdfDBName.lastIndexOf('_') + 1);
 
         // scan the BTree if all the filters are given
         if (!subjectNull && !objectNull && !predicateNull && !confidenceNull) {
@@ -368,13 +369,28 @@ public class Stream {
         }
         // scan the entire heapfile if the index file cannot be used
         else {
-            System.out.println("scan entire tree");
-            scan_entire_heapfile = true;
-            scanEntireHeapFile(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            if(Integer.parseInt(indexoption) == 1 && !confidenceNull){
+                scanBTConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            }
+            else if(Integer.parseInt(indexoption) == 2 && !subjectNull && !confidenceNull){
+                scanBTSubjectConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            }
+            else if (Integer.parseInt(indexoption) == 3 && !objectNull && !confidenceNull) {
+                scanBTObjectConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            } 
+            else if (Integer.parseInt(indexoption) == 4 && !predicateNull && !confidenceNull) {
+                scanBTPredicateConfidenceIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            } 
+            else if (Integer.parseInt(indexoption) == 5 && !subjectNull) {
+                scanBTSubjectIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            }
+            else{
+                System.out.println("scan entire tree");
+                scan_entire_heapfile = true;
+                scanEntireHeapFile(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            }
+            iterator = new TScan(Result_HF);
         }
-
-        // Sort the results
-        iterator = new TScan(Result_HF);
     }
 
     /**
