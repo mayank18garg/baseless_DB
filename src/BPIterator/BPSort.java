@@ -372,8 +372,8 @@ public class BPSort extends BPIterator implements GlobalConst
             {
                 // set lastElem to have the value of the current tuple,
                 // need tuple_utils.java
-                //BPUtils.SetValue(lastElem, cur_node.tuple, _sort_fld, sortFldType);
-                BPUtils.SetValue(sortFldType, lastElem, _sort_fld, cur_node.tuple);
+                BPUtils.SetValue(lastElem, cur_node.tuple, _sort_fld, sortFldType);
+                // BPUtils.SetValue(sortFldType, lastElem, _sort_fld, cur_node.tuple);
                 // write tuple to output file, need io_bufs.java, type cast???
                 //	System.out.println("Putting tuple into run " + (run_num + 1));
                 //	cur_node.tuple.print(_in);
