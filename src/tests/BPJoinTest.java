@@ -361,25 +361,25 @@ public class BPJoinTest {
                         e.printStackTrace();
                     }
 
-//                    BPSort sort = null;
-//                    BPOrder order = new BPOrder(bporder);
-//                    try {
-//                        sort = new BPSort(fscan, order, node_position, num_of_sort_pages);
-//                    }
-//                    catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
+                    BPSort sort = null;
+                    BPOrder order = new BPOrder(bporder);
+                    try {
+                        sort = new BPSort(fscan, order, node_position, num_of_sort_pages);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
 
-//                    try {
-//                        while((bp = sort.get_next()) != null) {
-//                            bp.print();
-//                        }
-//                    }
-//                    catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                    System.out.println("** SORTING DONE **");
-//                    sort.close();
+                    try {
+                        while((bp = sort.getnext()) != null) {
+                            bp.print();
+                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("** SORTING DONE **");
+                    sort.close();
 
                 }
                 //CLEANUP OF THE FILES

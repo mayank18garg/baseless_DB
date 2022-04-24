@@ -3,6 +3,7 @@ package BPIterator;
 import global.*;
 import heap.FieldNumberOutOfBoundException;
 import heap.Tuple;
+import iterator.TupleUtilsException;
 import iterator.UnknowAttrType;
 import labelheap.Label;
 import labelheap.LabelHeapfile;
@@ -21,7 +22,7 @@ public class BPUtils {
      * @return return 1 if q1 is greater than q2
      * return -1 if q1 is less than q2
      */
-    private static int compareTuple(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple Tuple2, int Field_no_2) throws Exception {
+    public static int compareTuple(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple Tuple2, int Field_no_2) throws Exception {
         int pid_1, sid_1, pid_2, sid_2;
 
         String t1_s, t2_s;
@@ -78,8 +79,9 @@ public class BPUtils {
     }
 
 
-    public static int CompareTupleWithValue(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple value) {
-        return CompareTupleWithValue(field_type, Tuple1, Field_no_1, value);
+    public static int CompareTupleWithValue(AttrType field_type, Tuple Tuple1, int Field_no_1, Tuple value)
+            throws UnknowAttrType, IOException, TupleUtilsException {
+        return CompareTupleWithTuple(field_type, Tuple1, Field_no_1, value, Field_no_1);
     }
 
 
