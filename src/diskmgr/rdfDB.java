@@ -41,6 +41,8 @@ public class rdfDB extends DB implements GlobalConst {
 	//(4) BTree Index file on predicate and confidence
 	//(5) BTree Index file on subject
 	private QuadrupleBTreeFile QuadrupleBTIndexOnObject;
+	private QuadrupleBTreeFile QuadrupleBTIndexOnPredicate;
+
 public LabelHeapBTreeFile getPredicateBtree() throws GetFileEntryException, PinPageException, ConstructPageException{
 	PredicateBT = new LabelHeapBTreeFile(dbname+"/predicateBT");
 		// return _BTree;
@@ -80,7 +82,12 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 		QuadrupleBTIndexOnObject = new QuadrupleBTreeFile(dbname+"/Object_BTreeIndex");
 		return QuadrupleBTIndexOnObject;
 	}
-  public QuadrupleBTreeFile getQuadrupleBT()
+	public QuadrupleBTreeFile getQuadrupleBTIndexOnPredicate()
+			throws GetFileEntryException, PinPageException, ConstructPageException, IOException {
+		QuadrupleBTIndexOnPredicate = new QuadrupleBTreeFile(dbname+"/Predicate_BTreeIndex");
+		return QuadrupleBTIndexOnPredicate;
+	}
+  	public QuadrupleBTreeFile getQuadrupleBT()
 		  throws GetFileEntryException, PinPageException, ConstructPageException, IOException {
 		QuadrupleBT = new QuadrupleBTreeFile(dbname+"/quadrupleBT");
 		return QuadrupleBT;
@@ -114,6 +121,9 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 			if(QuadrupleBTIndexOnObject != null){
 				QuadrupleBTIndexOnObject.close();
 			}
+			// if(QuadrupleBTIndexOnPredicate != null){
+			// 	QuadrupleBTIndexOnPredicate.close();
+			// }
 			if(TEMPQuadHF != null && TEMPQuadHF != getQuadrupleHandle())
 			{
 				TEMPQuadHF.deleteFile();
@@ -293,6 +303,18 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 		catch(Exception e)
 		{
 			System.err.println ("Error: B tree index cannot be created"+e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+		try
+		{
+			QuadrupleBTIndexOnPredicate = new QuadrupleBTreeFile(dbname+"/Predicate_BTreeIndex",keytype,255,1);
+			QuadrupleBTIndexOnPredicate.close();
+			// createIndex(type);
+		}
+		catch(Exception e)
+		{
+			System.err.println ("Error: Predicate B tree index cannot be created"+e);
 			e.printStackTrace();
 			Runtime.getRuntime().exit(1);
 		}
@@ -1033,6 +1055,51 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 			Runtime.getRuntime().exit(1);
 		}
 	}
+
+	public void createIndexOnPredicate()
+    {
+		//Unclustered BTree Index file on predicate
+		try
+		{
+			//destroy existing index first
+			// File file = new File(dbname + "/Quadruple_BTreeIndex");
+			if(QuadrupleBTIndexOnPredicate != null)
+			{
+				System.out.println("Deleting the existing index btree.");
+				QuadrupleBTIndexOnPredicate.close();
+				QuadrupleBTIndexOnPredicate.destroyFile();
+				destroyIndex(dbname+"/Predicate_BTreeIndex");
+			}
+
+			//create new
+			int keytype = AttrType.attrString;
+			//scan sorted heap file and insert into btree index
+			QuadrupleBTIndexOnPredicate = new QuadrupleBTreeFile(dbname+"/Predicate_BTreeIndex",keytype,255,1);
+			QuadrupleHeap = new QuadrupleHeapfile(dbname+"/quadrupleHF");
+			PredicateHeap = new LabelHeapfile(dbname+"/predicateHF");
+			TScan am = new TScan(QuadrupleHeap);
+			Quadruple quadruple = null;
+			QID qid = new QID();
+			// KeyDataEntry entry = null;
+			// QuadrupleBTFileScan scan = null;
+			
+			while((quadruple = am.getNext(qid)) != null)
+			{
+				// Label subject = EntityHeap.getLabel(quadruple.getSubjecqid().returnLID());
+				Label predicate = PredicateHeap.getLabel(quadruple.getPredicateID().returnLID());
+				KeyClass key = new StringKey(predicate.getLabel());
+				QuadrupleBTIndexOnPredicate.insert(key,qid);
+			}
+			am.closescan();
+			QuadrupleBTIndexOnPredicate.close();
+		}
+		catch(Exception e)
+		{
+			System.err.println ("Error: cannot create index on Predicate" + e);
+			e.printStackTrace();
+			Runtime.getRuntime().exit(1);
+		}
+    }
 
 	private void destroyIndex(String filename)
     {

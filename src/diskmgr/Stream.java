@@ -384,6 +384,9 @@ public class Stream {
             else if (Integer.parseInt(indexoption) == 5 && !subjectNull) {
                 scanBTSubjectIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
             }
+            else if(!predicateNull){
+                scanBTPredicateIndex(subjectFilter, predicateFilter, objectFilter, confidenceFilter);
+            }
             else{
                 System.out.println("scan entire tree");
                 scan_entire_heapfile = true;
@@ -861,6 +864,56 @@ public class Stream {
             e.printStackTrace();
             Runtime.getRuntime().exit(1);
         }
+    }
+
+    private void scanBTPredicateIndex(String subjectFilter, String predicateFilter, String objectFilter,
+            double confidenceFilter) throws Exception {
+
+        boolean result = false;
+        KeyDataEntry entry = null;
+        QID quadrupleID = null;
+        Quadruple record = null;
+        Label subject = null, predicate = null, object = null;
+
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTIndexOnObject();
+        QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
+        LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+        LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
+
+        Result_HF = new QuadrupleHeapfile("Result_HF");
+
+        KeyClass low_key = new StringKey(predicateFilter);
+        KeyClass high_key = new StringKey(predicateFilter);
+        QuadrupleBTFileScan scan = QuadrupleBTree.new_scan(low_key, high_key);
+
+        // scan the index file with the key and
+        // insert the corresponding quadruple in the result heapfile
+        while ((entry = scan.get_next()) != null) {
+
+            result = true;
+            quadrupleID = ((QuadrupleLeafData) entry.data).getData();
+            record = QuadrupleHF.getQuadruple(quadrupleID);
+            subject = Entity_HF.getLabel(record.getSubjecqid().returnLID());
+            object = Entity_HF.getLabel(record.getObjecqid().returnLID());
+            predicate = Predicate_HF.getLabel(record.getPredicateID().returnLID());
+
+            if (!subjectNull) {
+                result = result & (subjectFilter.compareTo(subject.getLabel()) == 0);
+            }
+            if (!objectNull) {
+                result = result & (objectFilter.compareTo(object.getLabel()) == 0);
+            }
+            if (!confidenceNull) {
+                result = result & (record.getConfidence() >= confidenceFilter);
+            }
+
+            if (result) {
+                Result_HF.insertQuadruple(record.returnQuadrupleByteArray());
+            }
+        }
+
+        scan.DestroyBTreeFileScan();
+        QuadrupleBTree.close();
     }
 
 }
