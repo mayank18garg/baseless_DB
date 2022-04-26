@@ -51,7 +51,7 @@ public abstract class BPIterator implements Flags {
   *@exception UnknownKeyTypeException key type unknown
   *@exception Exception other exceptions
   */
-  public abstract BasicPattern get_next()
+  public abstract BasicPattern getnext()
     throws IOException,
     JoinsException ,
     IndexException,
