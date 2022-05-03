@@ -185,7 +185,7 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 
 		/** Initialize counter to zero **/ 
 		PCounter.initialize();
-		
+		dbname = SystemDefs.JavabaseDBName;
 		//Create TEMP Quadruple heap file
 		try
 		{ 
@@ -976,8 +976,7 @@ public LabelHeapBTreeFile getEntityBtree() throws GetFileEntryException, PinPage
 		try
 		{
 			//destroy existing index first
-			File file = new File(dbname + "/Quadruple_BTreeIndex");
-			if(QuadrupleBTIndex != null || file.exists())
+			if(QuadrupleBTIndex != null)
 			{
 				System.out.println("Deleting the existing index btree.");
 				QuadrupleBTIndex.close();

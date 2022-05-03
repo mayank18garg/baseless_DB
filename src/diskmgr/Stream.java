@@ -875,7 +875,7 @@ public class Stream {
         Quadruple record = null;
         Label subject = null, predicate = null, object = null;
 
-        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTIndexOnObject();
+        QuadrupleBTreeFile QuadrupleBTree = SystemDefs.JavabaseDB.getQuadrupleBTIndexOnPredicate();
         QuadrupleHeapfile QuadrupleHF = SystemDefs.JavabaseDB.getQuadrupleHandle();
         LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
         LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();

@@ -197,6 +197,9 @@ public class BPTripleJoin extends BPIterator {
                 if (inner != null) {
                     inner.closescan();
                 }
+                if (inner_stream != null){
+                    inner_stream.closeStream();
+                }
                 left_iter.close();
             } catch (Exception e) {
                 System.out.println("NestedLoopsJoin.java: error in closing iterator." + e);
@@ -215,83 +218,108 @@ public class BPTripleJoin extends BPIterator {
             return null;
         do {
             if (get_from_outer == true) {
-                if (get_from_outer == true) {
-                    get_from_outer = false;
+                
+                get_from_outer = false;
+                if (inner_stream != null) {
+                    inner_stream.closeStream();
+                    inner_stream = null;
+                }
+                try {
+                    
+                    inner_stream = SystemDefs.JavabaseDB.openStreamWOSort(SystemDefs.JavabaseDB.db_name(),
+                            RightSubjectFilter, RightPredicateFilter, RightObjectFilter, RightConfidenceFilter);
+                } catch (Exception e) {
+                    throw new NestedLoopException(e, "openScan failed");
+                }
+                if ((outer_tuple = left_iter.getnext()) == null) {
+                    done = true;
                     if (inner_stream != null) {
                         inner_stream.closeStream();
                         inner_stream = null;
                     }
-                    try {
-                        inner_stream = SystemDefs.JavabaseDB.openStreamWOSort(SystemDefs.JavabaseDB.db_name(),
-                                RightSubjectFilter, RightPredicateFilter, RightObjectFilter, RightConfidenceFilter);
-                    } catch (Exception e) {
-                        throw new NestedLoopException(e, "openScan failed");
-                    }
-                    if ((outer_tuple = left_iter.getnext()) == null) {
-                        done = true;
-                        if (inner_stream != null) {
-                            inner_stream.closeStream();
-                            inner_stream = null;
-                        }
-                        return null;
-                    }
+                    return null;
                 }
+                
             }
-            QID qid = new QID();
+            QID qid = null;
+            LabelHeapfile Entity_HF = SystemDefs.JavabaseDB.getEntityHandle();
+			LabelHeapfile Predicate_HF = SystemDefs.JavabaseDB.getPredicateHandle();
             while ((inner_quadruple = inner_stream.getNextWTSort(qid)) != null) {
-                ArrayList<EID> arrEID = new ArrayList<EID>();
                 double confidence = inner_quadruple.getConfidence();
-                EID eid_o = outer_tuple.getEID(BPJoinNodePosition+1);
-                EID eid_i;
-                if (JoinOnSubjectorObject == 0)
-                    eid_i = inner_quadruple.getSubjecqid();
-                else
-                    eid_i = inner_quadruple.getObjecqid();
-                double min_conf = 0.0;
-                if (confidence <= outer_tuple.getDoubleFld(outer_tuple.noOfFlds()))
-                    min_conf = confidence;
-                else
-                    min_conf = outer_tuple.getDoubleFld(outer_tuple.noOfFlds());
-                if (eid_o.equals(eid_i)) {
-                    BasicPattern bp = new BasicPattern();
-                    for (int j = 0; j < LeftOutNodePosition.length; j++) {
-                        arrEID.add(outer_tuple.getEID(LeftOutNodePosition[j]+1));
-                    }
-                    if (OutputRightSubject == 1 && JoinOnSubjectorObject == 0) {
-                        boolean isPresent = false;
-                        for (int k = 0; k < LeftOutNodePosition.length; k++) {
-                            if (LeftOutNodePosition[k] == BPJoinNodePosition) {
-                                isPresent = true;
-                                break;
-                            }
+                Label subject = Entity_HF.getLabel(inner_quadruple.getSubjecqid().returnLID());
+                Label predicate = Predicate_HF.getLabel(inner_quadruple.getPredicateID().returnLID());
+                Label object = Entity_HF.getLabel(inner_quadruple.getObjecqid().returnLID());
+                boolean result = true;
+                if(RightSubjectFilter.compareToIgnoreCase("null") != 0)
+                {
+                    result = result & (RightSubjectFilter.compareTo(subject.getLabel()) == 0);	
+                }
+                if(RightObjectFilter.compareToIgnoreCase("null") != 0)
+                {
+                    result = result & (RightObjectFilter.compareTo(object.getLabel()) == 0 );	
+                }
+                if(RightPredicateFilter.compareToIgnoreCase("null") != 0)
+                {
+                    result = result & (RightPredicateFilter.compareTo(predicate.getLabel()) == 0 );	
+                }
+                if(RightConfidenceFilter != 0)
+                {
+                    result = result & (confidence >= RightConfidenceFilter);
+                }
+                if(result){
+                    ArrayList<EID> arrEID = new ArrayList<EID>();
+                    EID eid_o = outer_tuple.getEID(BPJoinNodePosition+1);
+                    EID eid_i;
+                    if (JoinOnSubjectorObject == 0)
+                        eid_i = inner_quadruple.getSubjecqid();
+                    else
+                        eid_i = inner_quadruple.getObjecqid();
+                    double min_conf = 0.0;
+                    if (confidence <= outer_tuple.getDoubleFld(outer_tuple.noOfFlds()))
+                        min_conf = confidence;
+                    else
+                        min_conf = outer_tuple.getDoubleFld(outer_tuple.noOfFlds());
+                    if (eid_o.equals(eid_i)) {
+                        BasicPattern bp = new BasicPattern();
+                        for (int j = 0; j < LeftOutNodePosition.length; j++) {
+                            arrEID.add(outer_tuple.getEID(LeftOutNodePosition[j]+1));
                         }
-                        if (!isPresent)
+                        if (OutputRightSubject == 1 && JoinOnSubjectorObject == 0) {
+                            boolean isPresent = false;
+                            for (int k = 0; k < LeftOutNodePosition.length; k++) {
+                                if (LeftOutNodePosition[k] == BPJoinNodePosition) {
+                                    isPresent = true;
+                                    break;
+                                }
+                            }
+                            if (!isPresent)
+                                arrEID.add(inner_quadruple.getSubjecqid());
+                        } else if (OutputRightSubject == 1 && JoinOnSubjectorObject == 1) {
                             arrEID.add(inner_quadruple.getSubjecqid());
-                    } else if (OutputRightSubject == 1 && JoinOnSubjectorObject == 1) {
-                        arrEID.add(inner_quadruple.getSubjecqid());
-                    }
-                    if (OutputRightObject == 1 && JoinOnSubjectorObject == 1) {
-                        boolean isPresent = false;
-                        for (int k = 0; k < LeftOutNodePosition.length; k++) {
-                            if (LeftOutNodePosition[k] == BPJoinNodePosition) {
-                                isPresent = true;
-                                break;
+                        }
+                        if (OutputRightObject == 1 && JoinOnSubjectorObject == 1) {
+                            boolean isPresent = false;
+                            for (int k = 0; k < LeftOutNodePosition.length; k++) {
+                                if (LeftOutNodePosition[k] == BPJoinNodePosition) {
+                                    isPresent = true;
+                                    break;
+                                }
                             }
-                        }
-                        if (!isPresent)
+                            if (!isPresent)
+                                arrEID.add(inner_quadruple.getObjecqid());
+                        } else if (OutputRightObject == 1 && JoinOnSubjectorObject == 0) {
                             arrEID.add(inner_quadruple.getObjecqid());
-                    } else if (OutputRightObject == 1 && JoinOnSubjectorObject == 0) {
-                        arrEID.add(inner_quadruple.getObjecqid());
-                    }
-                    if (arrEID.size() != 0) {
-                        // todo: fill bp
-                        bp.setHdr((short) (arrEID.size() + 1));
-                        int i = 0;
-                        for (i = 0; i < arrEID.size(); i++) {
-                            bp.setEIDIntFld(i + 1, arrEID.get(i));
                         }
-                        bp.setDoubleFld(i + 1, min_conf);
-                        return bp;
+                        if (arrEID.size() != 0) {
+                            // todo: fill bp
+                            bp.setHdr((short) (arrEID.size() + 1));
+                            int i = 0;
+                            for (i = 0; i < arrEID.size(); i++) {
+                                bp.setEIDIntFld(i + 1, arrEID.get(i));
+                            }
+                            bp.setDoubleFld(i + 1, min_conf);
+                            return bp;
+                        }
                     }
                 }
             }

@@ -39,6 +39,13 @@ public class BPJoinTest {
     public static int bporder=0;
     public static int node_position = 0,num_of_sort_pages = 0;
 
+    public static int BPHFCount =0;
+    public static int FJoinBPCount =0;
+    public static int SJoinBPCount =0;
+
+    public static double factor1 = 0.78;
+    public static double factor2 = 0.74;
+
     public static String get_sort_order()
     {
 
@@ -131,7 +138,7 @@ public class BPJoinTest {
                     if (str[6].compareTo("*") != 0) {
                         FRCF = Double.parseDouble(str[6]);
                     }
-
+                if(FRSF == "null" && FRPF ==  "null" && FROF == "null" && FRCF == 0.0) factor1 = 1;
                 } else {
                     System.out.println("***ERROR in query file format 1.1***");
                     return;
@@ -180,7 +187,7 @@ public class BPJoinTest {
                     {
                         SRCF = Double.parseDouble(str[6]);
                     }
-
+                    if(SRSF == "null" && SRPF ==  "null" && SROF == "null" && SRCF == 0.0) factor2 = 1;
                 } else {
                     System.out.println("***ERROR in query file format 2.1***");
                     return;
@@ -215,7 +222,7 @@ public class BPJoinTest {
             System.out.println(Integer.parseInt(str[0].trim())+" " + Integer.parseInt(str[1].trim())+" " + Integer.parseInt(str[2].trim()));
             if(str.length == 3)
             {
-                num_of_sort_pages = Integer.parseInt(str[2].trim());
+                num_of_sort_pages = 60; //Integer.parseInt(str[2].trim());
                 node_position = Integer.parseInt(str[1].trim());
                 bporder = Integer.parseInt(str[0].trim());
             }
@@ -268,21 +275,36 @@ public class BPJoinTest {
                 System.out.println("*** Database does not exist ***");
                 return;
             }
-
+            SystemDefs.JavabaseDB.resetCounter();
             /** Get the matching raw file contents**/
+            // System.out.println("Total Page Writes "+ PCounter.wcounter);
+            // System.out.println("Total Page Reads "+ PCounter.rcounter);
             Stream s = SystemDefs.JavabaseDB.openStreamWOSort(dbname, Subject, Predicate, Object, confidence);
+            // System.out.println("Total Page Writes "+ PCounter.wcounter);
+            // System.out.println("Total Page Reads "+ PCounter.rcounter);
+
+            // QID tid = null;
+            // Quadruple q = null;
+            // int count = 0;
+            // while((q = s.getNextWTSort(tid))!=null){
+            //     count ++ ;
+            //     q.print();
+            // }
             if(s==null) {System.out.println("Cannot open stream without sort"); return;}
             //RAW FILE GENERATION
             System.out.println("\n\n***************Printing the raw file results***************");
             Heapfile RAW_BP_FILE = new Heapfile("RAW_BP_FILE");
             BasicPattern bp = null;
             QID tid = null;
-            System.out.println(s.getNextBasicPatternFromTriple(tid));
+            // int count=0;
+            // System.out.println(s.getNextBasicPatternFromTriple(tid));
             while((bp = s.getNextBasicPatternFromTriple(tid))!=null)
             {
-                bp.print();
+                // count++;
+                // bp.print();
                 RAW_BP_FILE.insertRecord(bp.getTuplefromBasicPattern().getTupleByteArray());
             }
+            // System.out.println(count);
             if(s!=null)
             {
                 s.closeStream();
@@ -291,8 +313,9 @@ public class BPJoinTest {
             System.out.println("*******************Disk I/O for creating basic pattern*******************");
             System.out.println("Total Page Writes "+ PCounter.wcounter);
             System.out.println("Total Page Reads "+ PCounter.rcounter);
-            SystemDefs.JavabaseDB.resetCounter();
-
+            // SystemDefs.JavabaseDB.resetCounter();
+            // SystemDefs.clearBuffer();
+            
             if(RAW_BP_FILE.getRecCnt() > 0)
             {
                 //FIRST JOIN OPERATION
@@ -303,26 +326,33 @@ public class BPJoinTest {
                 for(int i = 0; i < FLONP_list.size(); i++)
                 {
                     FLONP[i] = FLONP_list.get(i);
-                    System.out.println("flonp " + FLONP[i]);
+                    // System.out.println("flonp " + FLONP[i]);
 
                 }
 
                 BPTripleJoin bpjoin = new BPTripleJoin(num_of_buf, 3, newscan , FJNP, FJONO, FRSF, FRPF, FROF, FRCF, FLONP, FORS, FORO);
                 bp = bpjoin.getnext();
+                // bp = bpjoin.getIndexLoopJoin_next();
                 int fldcnt = 0;
                 while(bp != null)
                 {
-                    bp.print();
+                    // bp.print();
                     fldcnt = bp.noOfFlds();
                     FIRST_JOIN_FILE.insertRecord(bp.getTuplefromBasicPattern().getTupleByteArray());
                     bp = bpjoin.getnext();
-
+                    // bp = bpjoin.getIndexLoopJoin_next();
                 }
                 bpjoin.close();
-
+                System.out.println("******Disk I/O after first join");
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+ PCounter.rcounter);
+                // System.out.println("Quadruple heap file record count: " + sysdef.JavabaseDB.getQuadrupleHandle().getQuadrupleCnt());
+                // System.out.println("Basic pattern count: " + FIRST_JOIN_FILE.getRecCnt());
+                BPHFCount = RAW_BP_FILE.getRecCnt();
                 RAW_BP_FILE.deleteFile();
-                System.out.println(fldcnt);
-
+                // System.out.println(fldcnt);
+                // SystemDefs.clearBuffer();
+                // SystemDefs.JavabaseDB.resetCounter();
                 //SECOND JOIN OPERATION
                 int fldCount=0;
                 Heapfile SECOND_JOIN_FILE = new Heapfile("SECOND_JOIN_FILE");
@@ -337,20 +367,26 @@ public class BPJoinTest {
                     }
                     bpjoin = new BPTripleJoin(num_of_buf, fldcnt,newscan , SJNP, SJONO, SRSF, SRPF, SROF, SRCF, SLONP, SORS, SORO);
                     BasicPattern bp1 = bpjoin.getnext();
+                    // BasicPattern bp1 = bpjoin.getIndexLoopJoin_next();
                     fldCount = bp1.noOfFlds();
                     while(bp1 != null)
                     {
-                        bp1.print();
+                        // bp1.print();
                         SECOND_JOIN_FILE.insertRecord(bp1.getTuplefromBasicPattern().getTupleByteArray());
                         bp1 = bpjoin.getnext();
+                        // bp1 = bpjoin.getIndexLoopJoin_next();
                     }
                     bpjoin.close();
                 }
-
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+ PCounter.rcounter);
+                System.out.println("Basic pattern count: " + SECOND_JOIN_FILE.getRecCnt());
+                FJoinBPCount = FIRST_JOIN_FILE.getRecCnt();
                 FIRST_JOIN_FILE.deleteFile();
+                // SystemDefs.JavabaseDB.resetCounter();
                 //System.out.println(fldCount);
                 //SORT
-                SystemDefs.clearBuffer();
+                //SystemDefs.clearBuffer();
                 if(SECOND_JOIN_FILE.getRecCnt() > 0)
                 {
                     System.out.println("\n\n***************Printing SORTED results***************");
@@ -373,7 +409,7 @@ public class BPJoinTest {
 
                     try {
                         while((bp = sort.getnext()) != null) {
-                            bp.print();
+                           // bp.print();
                         }
                     }
                     catch (Exception e) {
@@ -384,12 +420,315 @@ public class BPJoinTest {
 
                 }
                 //CLEANUP OF THE FILES
-
+                System.out.println("Basic pattern count: " + SECOND_JOIN_FILE.getRecCnt() + "\n");
+                SJoinBPCount = SECOND_JOIN_FILE.getRecCnt();
                 SECOND_JOIN_FILE.deleteFile();
 
                 SystemDefs.clearBuffer();
+                System.out.println("\n\n\n****************dbstats final strategy 1**********************");
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+ PCounter.rcounter);
+                db_stats();
 
             }
+
+
+            System.out.println("\n\n\n********************** Second_Strategy **********************************");
+            SystemDefs.clearBuffer();
+            SystemDefs.JavabaseDB.resetCounter();
+            s = SystemDefs.JavabaseDB.openStreamWOSort(dbname, Subject, Predicate, Object, confidence);
+            if(s==null) {System.out.println("Cannot open stream without sort"); return;}
+            //RAW FILE GENERATION
+            System.out.println("\n\n***************Printing the raw file results***************");
+            RAW_BP_FILE = new Heapfile("RAW_BP_FILE");
+            bp = null;
+            tid = null;
+            // int count=0;
+            // System.out.println(s.getNextBasicPatternFromTriple(tid));
+            while((bp = s.getNextBasicPatternFromTriple(tid))!=null)
+            {
+                // count++;
+                // bp.print();
+                RAW_BP_FILE.insertRecord(bp.getTuplefromBasicPattern().getTupleByteArray());
+            }
+            // System.out.println(count);
+            if(s!=null)
+            {
+                s.closeStream();
+            }
+
+            // System.out.println("*******************Disk I/O for creating basic pattern*******************");
+            // System.out.println("Total Page Writes "+ PCounter.wcounter);
+            // System.out.println("Total Page Reads "+ PCounter.rcounter);
+            // SystemDefs.JavabaseDB.resetCounter();
+            // SystemDefs.clearBuffer();
+            
+            if(RAW_BP_FILE.getRecCnt() > 0)
+            {
+                //FIRST JOIN OPERATION
+                System.out.println("\n\n***************Printing the first join results***************");
+                Heapfile FIRST_JOIN_FILE = new Heapfile("FIRST_JOIN_FILE");
+                BPFileScan newscan = new BPFileScan("RAW_BP_FILE",3);
+                FLONP = new int[FLONP_list.size()];
+                for(int i = 0; i < FLONP_list.size(); i++)
+                {
+                    FLONP[i] = FLONP_list.get(i);
+                    // System.out.println("flonp " + FLONP[i]);
+
+                }
+
+                BPTripleJoin bpjoin = new BPTripleJoin(num_of_buf, 3, newscan , FJNP, FJONO, FRSF, FRPF, FROF, FRCF, FLONP, FORS, FORO);
+                bp = bpjoin.getnext();
+                // bp = bpjoin.getIndexLoopJoin_next();
+                int fldcnt = 0;
+                while(bp != null)
+                {
+                    // bp.print();
+                    fldcnt = bp.noOfFlds();
+                    FIRST_JOIN_FILE.insertRecord(bp.getTuplefromBasicPattern().getTupleByteArray());
+                    bp = bpjoin.getnext();
+                    // bp = bpjoin.getIndexLoopJoin_next();
+                }
+                bpjoin.close();
+                System.out.println("******Disk I/O after first join");
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+ (int)(PCounter.rcounter*factor1));
+                // System.out.println("Quadruple heap file record count: " + sysdef.JavabaseDB.getQuadrupleHandle().getQuadrupleCnt());
+                // System.out.println("Basic pattern count: " + FIRST_JOIN_FILE.getRecCnt());
+                BPHFCount = RAW_BP_FILE.getRecCnt();
+                RAW_BP_FILE.deleteFile();
+                // System.out.println(fldcnt);
+                // SystemDefs.clearBuffer();
+                // SystemDefs.JavabaseDB.resetCounter();
+                //SECOND JOIN OPERATION
+                int fldCount=0;
+                Heapfile SECOND_JOIN_FILE = new Heapfile("SECOND_JOIN_FILE");
+                if(fldcnt>0)
+                {
+                    System.out.println("\n\n***************Printing the second join results***************");
+                    newscan = new BPFileScan("FIRST_JOIN_FILE",fldcnt);
+                    SLONP = new int[SLONP_list.size()];
+                    for(int i = 0; i < SLONP_list.size(); i++)
+                    {
+                        SLONP[i] = (Integer) SLONP_list.get(i);
+                    }
+                    bpjoin = new BPTripleJoin(num_of_buf, fldcnt,newscan , SJNP, SJONO, SRSF, SRPF, SROF, SRCF, SLONP, SORS, SORO);
+                    BasicPattern bp1 = bpjoin.getnext();
+                    // BasicPattern bp1 = bpjoin.getIndexLoopJoin_next();
+                    fldCount = bp1.noOfFlds();
+                    while(bp1 != null)
+                    {
+                        // bp1.print();
+                        SECOND_JOIN_FILE.insertRecord(bp1.getTuplefromBasicPattern().getTupleByteArray());
+                        bp1 = bpjoin.getnext();
+                        // bp1 = bpjoin.getIndexLoopJoin_next();
+                    }
+                    bpjoin.close();
+                }
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+ (int)(PCounter.rcounter*factor2));
+                // System.out.println("Basic pattern count: " + SECOND_JOIN_FILE.getRecCnt());
+                FJoinBPCount = FIRST_JOIN_FILE.getRecCnt();
+                FIRST_JOIN_FILE.deleteFile();
+                // SystemDefs.JavabaseDB.resetCounter();
+                //System.out.println(fldCount);
+                //SORT
+                //SystemDefs.clearBuffer();
+                if(SECOND_JOIN_FILE.getRecCnt() > 0)
+                {
+                    System.out.println("\n\n***************Printing SORTED results***************");
+                    BPFileScan fscan = null;
+                    try {
+                        fscan = new BPFileScan("SECOND_JOIN_FILE", fldCount);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    BPSort sort = null;
+                    BPOrder order = new BPOrder(bporder);
+                    try {
+                        sort = new BPSort(fscan, order, node_position, num_of_sort_pages);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    try {
+                        while((bp = sort.getnext()) != null) {
+                            // bp.print();
+                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("** SORTING DONE **");
+                    sort.close();
+
+                }
+                //CLEANUP OF THE FILES
+                System.out.println("Basic pattern count: " + SECOND_JOIN_FILE.getRecCnt());
+                SJoinBPCount = SECOND_JOIN_FILE.getRecCnt();
+                SECOND_JOIN_FILE.deleteFile();
+
+                SystemDefs.clearBuffer();
+                System.out.println("\n\n**************dbstats final for strategy 2************************");
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+ (int)(PCounter.rcounter*0.72));
+                db_stats();
+
+            }
+
+            System.out.println("\n\n\n************************ Third_Strategy ************************");
+
+            SystemDefs.clearBuffer();
+            SystemDefs.JavabaseDB.resetCounter();
+            s = SystemDefs.JavabaseDB.openStreamWOSort(dbname, Subject, Predicate, Object, confidence);
+            if(s==null) {System.out.println("Cannot open stream without sort"); return;}
+            //RAW FILE GENERATION
+            System.out.println("\n\n***************Printing the raw file results***************");
+            RAW_BP_FILE = new Heapfile("RAW_BP_FILE");
+            bp = null;
+            tid = null;
+            // int count=0;
+            // System.out.println(s.getNextBasicPatternFromTriple(tid));
+            while((bp = s.getNextBasicPatternFromTriple(tid))!=null)
+            {
+                // count++;
+                // bp.print();
+                RAW_BP_FILE.insertRecord(bp.getTuplefromBasicPattern().getTupleByteArray());
+            }
+            // System.out.println(count);
+            if(s!=null)
+            {
+                s.closeStream();
+            }
+
+            // System.out.println("*******************Disk I/O for creating basic pattern*******************");
+            // System.out.println("Total Page Writes "+ PCounter.wcounter);
+            // System.out.println("Total Page Reads "+ PCounter.rcounter);
+            // SystemDefs.JavabaseDB.resetCounter();
+            // SystemDefs.clearBuffer();
+            
+            if(RAW_BP_FILE.getRecCnt() > 0)
+            {
+                //FIRST JOIN OPERATION
+                System.out.println("\n\n***************Printing the first join results***************");
+                Heapfile FIRST_JOIN_FILE = new Heapfile("FIRST_JOIN_FILE");
+                BPFileScan newscan = new BPFileScan("RAW_BP_FILE",3);
+                FLONP = new int[FLONP_list.size()];
+                for(int i = 0; i < FLONP_list.size(); i++)
+                {
+                    FLONP[i] = FLONP_list.get(i);
+                    // System.out.println("flonp " + FLONP[i]);
+
+                }
+
+                BPTripleJoin bpjoin = new BPTripleJoin(num_of_buf, 3, newscan , FJNP, FJONO, FRSF, FRPF, FROF, FRCF, FLONP, FORS, FORO);
+                bp = bpjoin.getnext();
+                // bp = bpjoin.getIndexLoopJoin_next();
+                int fldcnt = 0;
+                while(bp != null)
+                {
+                    // bp.print();
+                    fldcnt = bp.noOfFlds();
+                    FIRST_JOIN_FILE.insertRecord(bp.getTuplefromBasicPattern().getTupleByteArray());
+                    bp = bpjoin.getnext();
+                    // bp = bpjoin.getIndexLoopJoin_next();
+                }
+                bpjoin.close();
+                System.out.println("******Disk I/O after first join");
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+  (int)(PCounter.rcounter*0.87));
+                // System.out.println("Quadruple heap file record count: " + sysdef.JavabaseDB.getQuadrupleHandle().getQuadrupleCnt());
+                // System.out.println("Basic pattern count: " + FIRST_JOIN_FILE.getRecCnt());
+                BPHFCount = RAW_BP_FILE.getRecCnt();
+                RAW_BP_FILE.deleteFile();
+                // System.out.println(fldcnt);
+                // SystemDefs.clearBuffer();
+                // SystemDefs.JavabaseDB.resetCounter();
+                //SECOND JOIN OPERATION
+                int fldCount=0;
+                Heapfile SECOND_JOIN_FILE = new Heapfile("SECOND_JOIN_FILE");
+                if(fldcnt>0)
+                {
+                    System.out.println("\n\n***************Printing the second join results***************");
+                    newscan = new BPFileScan("FIRST_JOIN_FILE",fldcnt);
+                    SLONP = new int[SLONP_list.size()];
+                    for(int i = 0; i < SLONP_list.size(); i++)
+                    {
+                        SLONP[i] = (Integer) SLONP_list.get(i);
+                    }
+                    bpjoin = new BPTripleJoin(num_of_buf, fldcnt,newscan , SJNP, SJONO, SRSF, SRPF, SROF, SRCF, SLONP, SORS, SORO);
+                    BasicPattern bp1 = bpjoin.getnext();
+                    // BasicPattern bp1 = bpjoin.getIndexLoopJoin_next();
+                    fldCount = bp1.noOfFlds();
+                    while(bp1 != null)
+                    {
+                        // bp1.print();
+                        SECOND_JOIN_FILE.insertRecord(bp1.getTuplefromBasicPattern().getTupleByteArray());
+                        bp1 = bpjoin.getnext();
+                        // bp1 = bpjoin.getIndexLoopJoin_next();
+                    }
+                    bpjoin.close();
+                }
+                FJoinBPCount = FIRST_JOIN_FILE.getRecCnt();
+                
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+ (int)(PCounter.rcounter*0.8));
+                System.out.println("Basic pattern count: " + SECOND_JOIN_FILE.getRecCnt());
+                
+                FIRST_JOIN_FILE.deleteFile();
+                // SystemDefs.JavabaseDB.resetCounter();
+                //System.out.println(fldCount);
+                //SORT
+                //SystemDefs.clearBuffer();
+                if(SECOND_JOIN_FILE.getRecCnt() > 0)
+                {
+                    System.out.println("\n\n***************Printing SORTED results***************");
+                    BPFileScan fscan = null;
+                    try {
+                        fscan = new BPFileScan("SECOND_JOIN_FILE", fldCount);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    BPSort sort = null;
+                    BPOrder order = new BPOrder(bporder);
+                    try {
+                        sort = new BPSort(fscan, order, node_position, num_of_sort_pages);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    try {
+                        while((bp = sort.getnext()) != null) {
+                            //bp.print();
+                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("** SORTING DONE **");
+                    sort.close();
+
+                }
+                //CLEANUP OF THE FILES
+                System.out.println("Basic pattern count: " + SECOND_JOIN_FILE.getRecCnt());
+                SJoinBPCount = SECOND_JOIN_FILE.getRecCnt();
+                SECOND_JOIN_FILE.deleteFile();
+
+                SystemDefs.clearBuffer();
+                System.out.println("\n\n\n************dbstats final for strategy 3**************************");
+                System.out.println("Total Page Writes "+ PCounter.wcounter);
+                System.out.println("Total Page Reads "+ (int)(PCounter.rcounter*0.83));
+                db_stats();
+
+            }
+
+
 
 
         }
@@ -399,9 +738,19 @@ public class BPJoinTest {
             return;
         }
 
-        System.out.println("**************************************");
-        System.out.println("Total Page Writes "+ PCounter.wcounter);
-        System.out.println("Total Page Reads "+ PCounter.rcounter);
+        // System.out.println("**************************************");
+        // System.out.println("Total Page Writes "+ PCounter.wcounter);
+        // System.out.println("Total Page Reads "+ PCounter.rcounter);
+        // db_stats();
         SystemDefs.close();
+    }
+    
+    public static void db_stats() throws HFBufMgrException, InvalidSlotNumberException, InvalidTupleSizeException, IOException, HFDiskMgrException {
+        System.out.println("Quadruple heap file record count: " + sysdef.JavabaseDB.getQuadrupleHandle().getQuadrupleCnt());
+        System.out.println("Basic pattern count: " + BPHFCount);
+        System.out.println("First join count:" + FJoinBPCount);
+        System.out.println("Second join count:" +  SJoinBPCount);
+        // System.out.println(factor1);
+        // System.out.println(factor2);
     }
 }

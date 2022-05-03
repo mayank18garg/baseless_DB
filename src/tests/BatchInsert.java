@@ -11,6 +11,7 @@ import quadrupleheap.*;
 import labelheap.*;
 import btree.*;
 import java.io.*;
+import diskmgr.*;
 
 public class BatchInsert {
 
@@ -90,11 +91,11 @@ public class BatchInsert {
                 //strLine = strLine.replace("\t\t",":").replace(" ","").replace(":"," ").trim();
                 //String[] input = strLine.split(" ");
                 String[] input = strLine.split("[\\s\\t:]");
-                if(input.length!=8){ System.out.println("skipping input " + (++inputCount)); continue;}
+                if(input.length!=7){ System.out.println("skipping input " + (++inputCount)); continue;}
                 String subject = input[1].trim();
                 String predicate = input[3].trim();
                 String object = input[5].trim();
-                String confidence = input[7].trim();
+                String confidence = input[6].trim();
                 if(subject.isEmpty() || predicate.isEmpty() || object.isEmpty() || confidence.isEmpty()){
                     System.out.println("skipping incorrect input " + (++inputCount)); continue;
                 }
@@ -157,9 +158,19 @@ public class BatchInsert {
             System.out.println("Create Btree index on subject, object and composite index on Subject+Predicate+Object+Confidence");
             // sysdef.JavabaseDB.createIndex5();
             // sysdef.JavabaseDB.createIndexOnObject();
-
-
-
+            sysdef.JavabaseDB.createIndexOnPredicate();
+            // Stream inner_stream = sysdef.JavabaseDB.openStreamWOSort(sysdef.JavabaseDB.db_name(), null, null, null, 0);
+            // QID tid = null;
+            // Quadruple q = null;
+            // int count = 0;
+            // while((q = inner_stream.getNextWTSort(tid))!=null){
+            //     count ++ ;
+            //     q.print();
+            // }
+            // System.out.println(sysdef.JavabaseDB.getQuadrupleCnt());
+            // inner_stream.closeStream();
+            // System.out.println(count);
+            // System.out.println(inner_stream.Result_HF.getQuadrupleCnt());
         }catch(Exception e){
             System.out.println("Error occured while parsing file");
             e.printStackTrace();
